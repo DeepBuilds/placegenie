@@ -9,8 +9,9 @@ from sqlalchemy.exc import SQLAlchemyError
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.core.config import get_settings
 from app.database.base import Base
-from app.database.session import engine
-from app.routers import auth, coordinators, health, students
+from app.database.seed import seed_reference_data
+from app.database.session import SessionLocal, engine
+from app.routers import auth, coordinators, health, reference, students
 
 settings = get_settings()
 logger = logging.getLogger("placegenie")
@@ -21,6 +22,8 @@ async def lifespan(_: FastAPI):
     # Create missing tables. Phase 2 will replace this with the full schema.
     try:
         Base.metadata.create_all(engine)
+        with SessionLocal() as db:
+            seed_reference_data(db)  # inserts only missing lookup rows
     except SQLAlchemyError:
         logger.warning("Could not reach MySQL at startup; check DB_* values in backend/.env.")
     yield
@@ -56,3 +59,4 @@ app.include_router(health.router, prefix=API_PREFIX)
 app.include_router(auth.router, prefix=API_PREFIX)
 app.include_router(students.router, prefix=API_PREFIX)
 app.include_router(coordinators.router, prefix=API_PREFIX)
+app.include_router(reference.router, prefix=API_PREFIX)

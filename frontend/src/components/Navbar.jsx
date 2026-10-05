@@ -23,6 +23,11 @@ export default function Navbar() {
               <Link to={homePathForRole(user.role)} className="text-slate-700 hover:text-indigo-600">
                 Dashboard
               </Link>
+              {user.role === 'student' && (
+                <Link to="/student/profile" className="text-slate-700 hover:text-indigo-600">
+                  My profile
+                </Link>
+              )}
               <span className="hidden text-slate-500 sm:inline">
                 {user.full_name} <span className="text-xs">({user.role})</span>
               </span>

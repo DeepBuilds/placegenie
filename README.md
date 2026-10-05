@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phase 3 (authentication and role-based access) is done, backend and frontend.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-4 are done: setup, database, authentication and role-based access, and the student profile.
 
 ## Tech stack
 | Layer | Technology |
@@ -84,10 +84,23 @@ In development Vite proxies `/api/*` to the backend, so the browser talks to one
   cd backend && .venv\Scripts\python -m app.database.create_coordinator
   ```
 
+## Student profile (Phase 4)
+Students manage their profile at `/student/profile`: personal and academic details, skills (with level), certifications, projects, experience, interests and placement preferences, plus a completeness score. The profile row is created at registration; the first save fills it in. Lookup lists (branches, skills, job roles) are seeded automatically at backend startup.
+
+| Endpoint (student only) | Purpose |
+|---|---|
+| `GET /students/me` | full profile + completeness |
+| `PUT /students/me` | save personal/academic details |
+| `PUT /students/me/skills` | replace skill list |
+| `PUT /students/me/preferences` | preferred roles/companies |
+| `POST /students/me/{certifications,projects,experiences}` | add item |
+| `PUT` / `DELETE /students/me/{certifications,projects,experiences}/{id}` | edit / remove item |
+| `GET /branches`, `/skills`, `/job-roles` | lookup lists (any logged-in user) |
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 52 tests: health, auth/RBAC, database models
-cd frontend && npm test                            # 12 tests: protected routes, login, register
+cd backend && .venv\Scripts\python -m pytest     # 85 tests: health, auth/RBAC, database models, student profile
+cd frontend && npm test                            # 22 tests: protected routes, login, register, profile page
 cd frontend && npm run lint && npm run build
 ```
 
