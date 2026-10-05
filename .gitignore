@@ -26,3 +26,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.log
+
+# Local copy of setup.sql with the real DB password
+database/*.local.sql
