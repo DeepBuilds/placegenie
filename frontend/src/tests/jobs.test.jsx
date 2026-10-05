@@ -45,6 +45,7 @@ beforeEach(() => {
   jobsApi.getJobs.mockResolvedValue(page([makeJob()]))
   jobsApi.getCompanies.mockResolvedValue({ items: [{ ...company, website: null, description: 'Security firm.', open_jobs: 2 }], total: 1, limit: 100, offset: 0 })
   jobsApi.getJob.mockResolvedValue(makeJob())
+  jobsApi.getSkillGap.mockResolvedValue({ has_requirements: false, summary: 'This job lists no specific skills, so there is nothing to compare.', notes: [], matched_skills: [], missing_skills: [], priority: [], disclaimer: 'x', job: { id: 7 } })
   jobsApi.getCompany.mockResolvedValue({ ...company, website: 'https://helix.example.com', description: 'We protect things.', open_jobs: 2 })
   profileApi.getBranches.mockResolvedValue([{ id: 1, name: 'Computer Science and Engineering' }])
   profileApi.getSkills.mockResolvedValue([{ id: 2, name: 'Python', category: 'Programming' }])

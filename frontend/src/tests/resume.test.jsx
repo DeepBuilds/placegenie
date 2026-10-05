@@ -154,7 +154,9 @@ describe('resume upload page', () => {
 })
 
 describe('analysis page', () => {
-  beforeEach(() => api.getMyResume.mockResolvedValue(resume))
+  beforeEach(() => {
+    api.getMyResume.mockResolvedValue(resume)
+  })
 
   it('shows the score, detected name, contact checks and suggestions in priority order', async () => {
     renderApp('/student/resume/analysis')

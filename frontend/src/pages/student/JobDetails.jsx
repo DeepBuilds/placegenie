@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getCompany, getJob } from '../../api/jobs'
 import EligibilityChecker from '../../components/jobs/EligibilityChecker'
+import SkillGapPanel from '../../components/jobs/SkillGapPanel'
 import SkillChips from '../../components/jobs/SkillChips'
 import { getErrorMessage } from '../../utils/errors'
 import {
@@ -96,6 +97,10 @@ export default function JobDetails() {
       </header>
 
       <EligibilityChecker key={job.id} jobId={job.id} />
+
+      <Card title="Skill gap">
+        <SkillGapPanel key={job.id} jobId={job.id} showFullPageLink />
+      </Card>
 
       {job.description && (
         <Card title="About the role">

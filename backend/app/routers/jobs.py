@@ -9,7 +9,8 @@ from app.models import JobStatus, JobType, User
 from app.repositories import job_repository as repo
 from app.schemas.eligibility import EligibilityOut
 from app.schemas.job import JobIn, JobOut, JobPage
-from app.services import eligibility_service
+from app.schemas.skill_gap import SkillGapOut
+from app.services import eligibility_service, skill_gap_service
 from app.services import job_service as svc
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -54,6 +55,15 @@ def check_eligibility(job_id: int, user: User = Depends(require_student), db: Se
     Nothing is stored: the result is computed from the current profile every time.
     """
     return eligibility_service.check_for_student(db, user, job_id)
+
+
+@router.get("/{job_id}/skill-gap", response_model=SkillGapOut)
+def skill_gap(job_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+    """Compare the logged-in student's skills with this job's skills: matched, missing, match % and priorities.
+
+    Read-only and computed from the current profile on every request; nothing is stored.
+    """
+    return skill_gap_service.analyze_for_student(db, user, job_id)
 
 
 # ----- coordinator only -----

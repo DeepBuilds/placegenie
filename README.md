@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-8 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, and resume analysis.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-9 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, and skill-gap analysis.
 
 ## Tech stack
 | Layer | Technology |
@@ -139,7 +139,7 @@ If the profile lacks data for a rule (e.g. no CGPA or branch), that rule is `not
 
 | Factor | Weight | How it is computed |
 |---|---|---|
-| Skill match | 45% | share of the job's skills the student holds (required = 1, preferred = 0.5, scaled by the job's own skill weights) |
+| Skill match | 45% | share of the job's skills the student holds (each required skill counts 1, each preferred skill 0.5) |
 | Academic fit | 20% | 0 if the CGPA rule is failed, else 0.7 + 0.3 x headroom above the minimum |
 | Preferred role | 15% | 1 = a preferred role, 0.5 = same role family, 0 = other |
 | Interest match | 10% | TF-IDF cosine similarity (scikit-learn): interests + projects + experience + certifications vs the job text |
@@ -168,10 +168,20 @@ It is heuristic keyword/pattern analysis, not human-level understanding; the UI 
 
 If you upgraded from Phase 7 with an existing database, the two empty tables `resume_analyses` and `resume_detected_skills` gained columns; drop them and restart the backend so they are recreated (there is no migration tool yet).
 
+## Skill-gap analysis (Phase 9)
+`GET /api/v1/jobs/{job_id}/skill-gap` (student only) compares the student's skills with one job. Shown on every job's details page and on its own page, `/student/skill-gap` (pick any open job; also linked from each recommendation). Read-only and computed from the current profile on every request.
+
+Response: `match_percentage`, `required_match_percentage`, counts, `matched_skills` (with the student's own level), `missing_skills` (each with `priority` and `reasons`), `priority` (the top 5 to work on, ranked), `summary`, `notes`, `open_jobs_compared`. A job with no skills returns `match_percentage: null` and nothing to compare; a student with no skills gets 0% plus a note to add skills.
+
+**Rules** (`backend/app/ai/skill_gap.py`, pure functions, no ML):
+- **Match %** is the same formula as the recommender's skill score: each required skill counts 1, each preferred skill 0.5, so the two screens always agree. The job's own 1-5 skill weights are not part of the percentage.
+- **Priority of a missing skill:** *high* = a required skill that is **essential** (the job gives it weight 3 or more out of 5) or that is **frequently requested** (asked for by at least 30% of currently open jobs); *medium* = any other required skill, or a preferred skill that is frequently requested; *low* = any other preferred skill. Within a level, skills are ordered by the job's weight, then how many open jobs ask for them, then name.
+- Every priority carries plain-language reasons ("Required for this job", "Essential: weight 3 out of 5", "Asked for in 6 of 18 open jobs (33%)"). There are no learning times, courses or outcome claims.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 298 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes
-cd frontend && npm test                            # 74 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes
+cd backend && .venv\Scripts\python -m pytest     # 338 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap
+cd frontend && npm test                            # 89 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap
 cd frontend && npm run lint && npm run build
 ```
 

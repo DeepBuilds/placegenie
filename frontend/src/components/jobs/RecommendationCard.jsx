@@ -146,7 +146,10 @@ export default function RecommendationCard({ rec }) {
 
       <Breakdown breakdown={rec.breakdown} multiplier={rec.eligibility.multiplier} score={rec.match_score} />
 
-      <div className="mt-4 text-right">
+      <div className="mt-4 flex flex-wrap items-center justify-end gap-4">
+        <Link to={`/student/skill-gap?job_id=${job.id}`} className="text-sm font-medium text-slate-600 hover:text-indigo-600 hover:underline">
+          Skill gap →
+        </Link>
         <Link to={`/student/jobs/${job.id}`} className="text-sm font-medium text-indigo-600 hover:underline">
           View details &amp; check eligibility →
         </Link>

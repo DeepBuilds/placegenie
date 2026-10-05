@@ -31,6 +31,9 @@ export default function Navbar() {
                   <Link to="/student/jobs" className="text-slate-700 hover:text-indigo-600">
                     Jobs
                   </Link>
+                  <Link to="/student/skill-gap" className="text-slate-700 hover:text-indigo-600">
+                    Skill gap
+                  </Link>
                   <Link to="/student/companies" className="text-slate-700 hover:text-indigo-600">
                     Companies
                   </Link>

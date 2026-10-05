@@ -12,3 +12,5 @@ export const getCompanies = (params) => client.get('/companies', { params: clean
 export const getCompany = (id) => client.get(`/companies/${id}`).then(data)
 
 export const checkEligibility = (jobId) => client.post(`/jobs/${jobId}/eligibility`).then(data)
+
+export const getSkillGap = (jobId) => client.get(`/jobs/${jobId}/skill-gap`).then(data)

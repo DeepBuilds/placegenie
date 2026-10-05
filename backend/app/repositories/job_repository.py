@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import and_, exists, func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import (
@@ -150,3 +150,16 @@ def count_open_jobs(db: Session, company_id: int) -> int:
 
 def get_company_by_name(db: Session, name: str) -> Company | None:
     return db.scalar(select(Company).where(func.lower(Company.name) == name.lower()))
+
+
+def skill_demand(db: Session) -> tuple[dict[int, int], int]:
+    """How many currently open jobs (deadline not passed) ask for each skill, and how many such jobs exist."""
+    still_open = and_(Job.status == JobStatus.OPEN, or_(Job.deadline.is_(None), Job.deadline >= date.today()))
+    total = db.scalar(select(func.count(Job.id)).where(still_open)) or 0
+    rows = db.execute(
+        select(JobSkill.skill_id, func.count(JobSkill.job_id))
+        .join(Job, Job.id == JobSkill.job_id)
+        .where(still_open)
+        .group_by(JobSkill.skill_id)
+    ).all()
+    return {skill_id: count for skill_id, count in rows}, total
