@@ -11,7 +11,7 @@ from app.core.config import get_settings
 from app.database.base import Base
 from app.database.seed import seed_reference_data
 from app.database.session import SessionLocal, engine
-from app.routers import auth, companies, coordinators, health, jobs, recommendations, reference, students
+from app.routers import auth, companies, coordinators, health, jobs, recommendations, reference, resumes, students
 
 settings = get_settings()
 logger = logging.getLogger("placegenie")
@@ -45,6 +45,20 @@ app.add_middleware(
 )
 
 
+@app.middleware("http")
+async def limit_upload_size(request: Request, call_next):
+    """Refuse an obviously oversized resume upload before the body is read (Content-Length check)."""
+    if request.method == "POST" and request.url.path.rstrip("/").endswith("/resumes"):
+        declared = request.headers.get("content-length")
+        limit = settings.resume_max_bytes + 64 * 1024  # room for the multipart envelope
+        if declared and declared.isdigit() and int(declared) > limit:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": f"The file is too large. The maximum size is {settings.resume_max_mb} MB."},
+            )
+    return await call_next(request)
+
+
 @app.exception_handler(SQLAlchemyError)
 async def database_error_handler(_: Request, exc: SQLAlchemyError):
     logger.exception("Database error")
@@ -63,3 +77,4 @@ app.include_router(reference.router, prefix=API_PREFIX)
 app.include_router(companies.router, prefix=API_PREFIX)
 app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(recommendations.router, prefix=API_PREFIX)
+app.include_router(resumes.router, prefix=API_PREFIX)

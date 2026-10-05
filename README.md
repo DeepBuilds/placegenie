@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-7 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, and job recommendations.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-8 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, and resume analysis.
 
 ## Tech stack
 | Layer | Technology |
@@ -11,7 +11,7 @@ It is a guidance tool; it does not replace recruitment decisions by companies or
 | Frontend | React 19, Vite, React Router, Axios, Tailwind CSS |
 | Backend | Python 3.11+, FastAPI, SQLAlchemy 2, Pydantic |
 | Database | MySQL 8 (via PyMySQL) |
-| AI/ML | scikit-learn (TF-IDF similarity); pandas/NumPy in later phases |
+| AI/ML | scikit-learn (TF-IDF similarity), pdfplumber (PDF text); pandas/NumPy in later phases |
 
 ## Folder structure
 ```
@@ -147,10 +147,31 @@ If the profile lacks data for a rule (e.g. no CGPA or branch), that rule is `not
 
 Factors with no data (no skills added, no CGPA, no preferred roles, ...) are left out and the remaining weights are rescaled to 100%; missing data is never scored as zero. Eligibility (Phase 6 engine) then multiplies the result: eligible x1.0, incomplete profile x0.9, not eligible x0.5, so "stretch" jobs stay visible but rank below jobs the student can apply to. TF-IDF similarity of 0.25 or more counts as a full match (raw cosine between short texts is small). The engine sits behind the `Recommender` interface (`default_recommender()`), so an ML ranker can replace or augment it without changing the API or UI.
 
+## Resume analysis (Phase 8)
+Students upload a **text-based PDF** at `/student/resume` and see the analysis at `/student/resume/analysis`. Scanned images are rejected with a clear message (no OCR). One resume per student: a new upload replaces the old one (and deletes its file).
+
+| Endpoint (student only) | Purpose |
+|---|---|
+| `POST /resumes` (multipart `file`) | upload, validate, analyse, store -> full analysis |
+| `GET /resumes/me` | current resume metadata, or `null` |
+| `GET /resumes/{id}/analysis` | analysis + live comparison with profile and open jobs |
+| `POST /resumes/{id}/analyze` | re-run the analysis on the stored text |
+| `POST /resumes/{id}/sync-skills` | add detected skills to the student's profile (marked `source=resume`) |
+| `GET /resumes/{id}/file` / `DELETE /resumes/{id}` | download / delete your own file |
+
+**Pipeline** (`backend/app/ai/resume/`, one small module per stage): `extract.py` (pdfplumber text) -> `clean.py` (unicode, bullets, spacing) -> `sections.py` (heading detection) -> `parse.py` (name, contact, education, projects, experience, certifications via patterns) -> `skills.py` (whole-word dictionary match against the platform skill list + aliases; ambiguous names like C/R/Go/Excel only count inside a Skills list) -> `analyze.py` (completeness score out of 100, keywords by TF-IDF, rule-based suggestions, job relevance, potentially missing skills, profile comparison).
+It is heuristic keyword/pattern analysis, not human-level understanding; the UI says so. Unusual layouts (multi-column, tables, graphics) can be read imperfectly.
+
+**Stored:** file metadata, the cleaned text, the analysis (sections, contact flags, extracted entries, keywords, suggestions) and detected skills with where each was found. **Computed on every request (never stored):** job relevance (50% TF-IDF similarity + 50% share of the job's skills the resume shows), potentially missing skills, profile comparison and the profile-based suggestions.
+
+**Security:** extension, content type and the `%PDF-` signature must all agree; size limit `RESUME_MAX_MB` (default 5, also refused early from `Content-Length`); page limit `RESUME_MAX_PAGES` (default 10); the stored name is a server-generated uuid (the client filename is only displayed, sanitised); files live in `backend/uploads/` (git-ignored); every query is scoped to the logged-in student, so another student's resume is simply "not found" (404).
+
+If you upgraded from Phase 7 with an existing database, the two empty tables `resume_analyses` and `resume_detected_skills` gained columns; drop them and restart the backend so they are recreated (there is no migration tool yet).
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 217 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations
-cd frontend && npm test                            # 54 tests: auth, profile, jobs, job details, companies, eligibility, recommendations
+cd backend && .venv\Scripts\python -m pytest     # 298 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes
+cd frontend && npm test                            # 74 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes
 cd frontend && npm run lint && npm run build
 ```
 

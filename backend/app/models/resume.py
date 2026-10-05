@@ -44,6 +44,12 @@ class ResumeAnalysis(TimestampMixin, Base):
         ForeignKey("resumes.id", ondelete="CASCADE"), unique=True, nullable=False
     )
     completeness_score: Mapped[int | None] = mapped_column(Integer)
+    detected_name: Mapped[str | None] = mapped_column(String(100))
+    word_count: Mapped[int | None] = mapped_column(Integer)
+    page_count: Mapped[int | None] = mapped_column(Integer)
+    sections: Mapped[list | None] = mapped_column(JSON)  # headings found, e.g. ["education", "skills"]
+    contact: Mapped[dict | None] = mapped_column(JSON)  # which contact items exist (flags, not the values)
+    keywords: Mapped[list | None] = mapped_column(JSON)
     education: Mapped[list | None] = mapped_column(JSON)
     projects: Mapped[list | None] = mapped_column(JSON)
     experience: Mapped[list | None] = mapped_column(JSON)
@@ -66,6 +72,7 @@ class ResumeDetectedSkill(Base):
     skill_id: Mapped[int] = mapped_column(
         ForeignKey("skills.id", ondelete="CASCADE"), primary_key=True, index=True
     )
+    evidence: Mapped[str | None] = mapped_column(String(100))  # where it was found, e.g. "skills,projects"
 
     analysis: Mapped[ResumeAnalysis] = relationship(back_populates="detected_skills")
     skill = relationship("Skill")

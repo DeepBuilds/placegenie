@@ -71,3 +71,11 @@ def coordinator_token(client, coordinator):
         json={"email": COORDINATOR["email"], "password": COORDINATOR["password"]},
     )
     return res.json()["access_token"]
+
+
+@pytest.fixture(autouse=True)
+def isolated_upload_dir(tmp_path, monkeypatch):
+    """Resume files written by a test go to a temporary folder, never to backend/uploads."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path / "uploads"))

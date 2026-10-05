@@ -1,4 +1,5 @@
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from sqlalchemy.engine import URL
@@ -25,6 +26,11 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Resume uploads (relative paths are resolved against the backend/ folder)
+    upload_dir: str = "uploads"
+    resume_max_mb: int = 5
+    resume_max_pages: int = 10
+
     llm_provider: str = "none"
     llm_api_key: str = ""
 
@@ -40,6 +46,15 @@ class Settings(BaseSettings):
             database=self.db_name,
             query={"charset": "utf8mb4"},
         )
+
+    @property
+    def upload_path(self) -> Path:
+        path = Path(self.upload_dir)
+        return path if path.is_absolute() else Path(__file__).resolve().parents[2] / path
+
+    @property
+    def resume_max_bytes(self) -> int:
+        return self.resume_max_mb * 1024 * 1024
 
     @property
     def cors_origin_list(self) -> list[str]:

@@ -12,6 +12,8 @@ import JobDetails from './pages/student/JobDetails'
 import Jobs from './pages/student/Jobs'
 import Profile from './pages/student/Profile'
 import Recommendations from './pages/student/Recommendations'
+import Resume from './pages/student/Resume'
+import ResumeAnalysis from './pages/student/ResumeAnalysis'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 export default function App() {
@@ -33,6 +35,8 @@ export default function App() {
                 <Route path="/student/jobs/:id" element={<JobDetails />} />
                 <Route path="/student/companies" element={<Companies />} />
                 <Route path="/student/recommendations" element={<Recommendations />} />
+                <Route path="/student/resume" element={<Resume />} />
+                <Route path="/student/resume/analysis" element={<ResumeAnalysis />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
                 <Route path="/coordinator" element={<CoordinatorHome />} />

@@ -34,6 +34,9 @@ export default function Navbar() {
                   <Link to="/student/companies" className="text-slate-700 hover:text-indigo-600">
                     Companies
                   </Link>
+                  <Link to="/student/resume" className="text-slate-700 hover:text-indigo-600">
+                    Resume
+                  </Link>
                   <Link to="/student/profile" className="text-slate-700 hover:text-indigo-600">
                     My profile
                   </Link>
