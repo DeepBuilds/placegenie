@@ -25,6 +25,9 @@ export default function Navbar() {
               </Link>
               {user.role === 'student' && (
                 <>
+                  <Link to="/student/recommendations" className="text-slate-700 hover:text-indigo-600">
+                    Recommended
+                  </Link>
                   <Link to="/student/jobs" className="text-slate-700 hover:text-indigo-600">
                     Jobs
                   </Link>

@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-6 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, and eligibility checking.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-7 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, and job recommendations.
 
 ## Tech stack
 | Layer | Technology |
@@ -11,7 +11,7 @@ It is a guidance tool; it does not replace recruitment decisions by companies or
 | Frontend | React 19, Vite, React Router, Axios, Tailwind CSS |
 | Backend | Python 3.11+, FastAPI, SQLAlchemy 2, Pydantic |
 | Database | MySQL 8 (via PyMySQL) |
-| AI/ML (later phases) | scikit-learn, pandas, NumPy |
+| AI/ML | scikit-learn (TF-IDF similarity); pandas/NumPy in later phases |
 
 ## Folder structure
 ```
@@ -129,10 +129,28 @@ It is **purely rule-based** (`backend/app/ai/eligibility.py`: plain functions, n
 
 If the profile lacks data for a rule (e.g. no CGPA or branch), that rule is `not_evaluated` rather than silently passing; a genuine failure always makes the result `NOT_ELIGIBLE`. Results are computed from the current profile on every request and are not stored. They are guidance only: the company and placement officers decide.
 
+## Job recommendations (Phase 7)
+`GET /api/v1/recommendations` (student only; page `/student/recommendations`) ranks open, not-yet-expired jobs for the logged-in student with a transparent 0-100 score. Query: `role_id`, `location`, `eligible_only`, `sort` (`score_desc` default, `score_asc`, `deadline`, `title`), `limit` (default 10, max 50), `offset`. Each item has the job, `match_score`, `eligibility`, `matched_skills`, `missing_skills`, `missing_preferred_skills`, `reasons` (why recommended), `concerns` (what holds it back) and a per-factor `breakdown`; the page also returns eligibility `counts` and `profile_hints`. Nothing is stored: scores are computed from the current profile on every request.
+
+**Algorithm** (`backend/app/ai/recommender.py`, explainable, no trained model):
+
+    fit   = weighted average of the factors the student has data for        (0..1)
+    score = fit x eligibility multiplier x 100
+
+| Factor | Weight | How it is computed |
+|---|---|---|
+| Skill match | 45% | share of the job's skills the student holds (required = 1, preferred = 0.5, scaled by the job's own skill weights) |
+| Academic fit | 20% | 0 if the CGPA rule is failed, else 0.7 + 0.3 x headroom above the minimum |
+| Preferred role | 15% | 1 = a preferred role, 0.5 = same role family, 0 = other |
+| Interest match | 10% | TF-IDF cosine similarity (scikit-learn): interests + projects + experience + certifications vs the job text |
+| Resume relevance | 10% | same TF-IDF similarity using the resume text (used only once a resume exists, Phase 8) |
+
+Factors with no data (no skills added, no CGPA, no preferred roles, ...) are left out and the remaining weights are rescaled to 100%; missing data is never scored as zero. Eligibility (Phase 6 engine) then multiplies the result: eligible x1.0, incomplete profile x0.9, not eligible x0.5, so "stretch" jobs stay visible but rank below jobs the student can apply to. TF-IDF similarity of 0.25 or more counts as a full match (raw cosine between short texts is small). The engine sits behind the `Recommender` interface (`default_recommender()`), so an ML ranker can replace or augment it without changing the API or UI.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 177 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility
-cd frontend && npm test                            # 44 tests: auth, profile, jobs, job details, companies, eligibility
+cd backend && .venv\Scripts\python -m pytest     # 217 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations
+cd frontend && npm test                            # 54 tests: auth, profile, jobs, job details, companies, eligibility, recommendations
 cd frontend && npm run lint && npm run build
 ```
 

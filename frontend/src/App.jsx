@@ -11,6 +11,7 @@ import Companies from './pages/student/Companies'
 import JobDetails from './pages/student/JobDetails'
 import Jobs from './pages/student/Jobs'
 import Profile from './pages/student/Profile'
+import Recommendations from './pages/student/Recommendations'
 import ProtectedRoute from './routes/ProtectedRoute'
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
                 <Route path="/student/jobs" element={<Jobs />} />
                 <Route path="/student/jobs/:id" element={<JobDetails />} />
                 <Route path="/student/companies" element={<Companies />} />
+                <Route path="/student/recommendations" element={<Recommendations />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
                 <Route path="/coordinator" element={<CoordinatorHome />} />
