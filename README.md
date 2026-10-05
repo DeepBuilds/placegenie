@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. The auth API (Phase 3 backend) is written and tested; the React login/registration UI is not built yet.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phase 3 (authentication and role-based access) is done, backend and frontend.
 
 ## Tech stack
 | Layer | Technology |
@@ -75,9 +75,19 @@ Frontend (`frontend/.env`): `VITE_API_BASE_URL` (default `/api/v1`), `VITE_PROXY
 ## How frontend and backend communicate
 In development Vite proxies `/api/*` to the backend, so the browser talks to one origin. All calls go through `frontend/src/api/client.js`. CORS is also configured in the backend (`CORS_ORIGINS`) for direct calls or deployment.
 
+## Authentication
+- Students self-register at `/register`; everyone logs in at `/login` and is sent to `/student` or `/coordinator` by role.
+- Passwords are hashed with bcrypt; sessions are JWT bearer tokens (`JWT_SECRET_KEY` in `backend/.env` is required; generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`).
+- The token is kept in `localStorage`; logout discards it. Expired or invalid tokens send the user back to the login page.
+- Public registration only creates students. Create a coordinator (hidden password prompt) with:
+  ```bash
+  cd backend && .venv\Scripts\python -m app.database.create_coordinator
+  ```
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest
+cd backend && .venv\Scripts\python -m pytest     # 52 tests: health, auth/RBAC, database models
+cd frontend && npm test                            # 12 tests: protected routes, login, register
 cd frontend && npm run lint && npm run build
 ```
 
