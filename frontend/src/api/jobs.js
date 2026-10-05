@@ -10,3 +10,5 @@ export const getJobs = (params) => client.get('/jobs', { params: clean(params) }
 export const getJob = (id) => client.get(`/jobs/${id}`).then(data)
 export const getCompanies = (params) => client.get('/companies', { params: clean(params) }).then(data)
 export const getCompany = (id) => client.get(`/companies/${id}`).then(data)
+
+export const checkEligibility = (jobId) => client.post(`/jobs/${jobId}/eligibility`).then(data)

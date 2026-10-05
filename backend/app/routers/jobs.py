@@ -3,11 +3,13 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
-from app.core.deps import get_current_user, require_coordinator
+from app.core.deps import get_current_user, require_coordinator, require_student
 from app.database.session import get_db
 from app.models import JobStatus, JobType, User
 from app.repositories import job_repository as repo
+from app.schemas.eligibility import EligibilityOut
 from app.schemas.job import JobIn, JobOut, JobPage
+from app.services import eligibility_service
 from app.services import job_service as svc
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
@@ -43,6 +45,15 @@ def search_jobs(
 @router.get("/{job_id}", response_model=JobOut)
 def get_job(job_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return svc.get_job_for(db, job_id, user)
+
+
+@router.post("/{job_id}/eligibility", response_model=EligibilityOut)
+def check_eligibility(job_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+    """Rule-based check of the logged-in student's profile against this job's requirements.
+
+    Nothing is stored: the result is computed from the current profile every time.
+    """
+    return eligibility_service.check_for_student(db, user, job_id)
 
 
 # ----- coordinator only -----

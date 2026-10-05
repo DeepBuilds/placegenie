@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-5 are done: setup, database, authentication and role-based access, the student profile, and companies/jobs.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-6 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, and eligibility checking.
 
 ## Tech stack
 | Layer | Technology |
@@ -98,7 +98,7 @@ Students manage their profile at `/student/profile`: personal and academic detai
 | `GET /branches`, `/skills`, `/job-roles` | lookup lists (any logged-in user) |
 
 ## Companies and jobs (Phase 5)
-Students browse `/student/jobs` (search + filters + pagination), `/student/jobs/:id` (full requirements) and `/student/companies`. Students only ever see **open** jobs; coordinators can see and manage everything. Eligibility is stored on the job (min CGPA, max backlogs, experience, allowed branches, required certifications, skills with required/preferred weight); no eligibility *calculation* exists yet (Phase 6).
+Students browse `/student/jobs` (search + filters + pagination), `/student/jobs/:id` (full requirements) and `/student/companies`. Students only ever see **open** jobs; coordinators can see and manage everything. Eligibility is stored on the job (min CGPA, max backlogs, experience, allowed branches, required certifications, skills with required/preferred weight); eligibility is checked by the engine below.
 
 Load the fictional demo data (10 companies, 19 jobs, varied requirements) once:
 ```bash
@@ -115,10 +115,24 @@ It is re-runnable and never overwrites edits. It is not run at startup, so compa
 
 Companies or jobs that already have student applications cannot be deleted (409): close the job instead. Deleting a company deletes its jobs. The coordinator management screens are part of the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` as a coordinator.
 
+## Eligibility checking (Phase 6)
+`POST /api/v1/jobs/{job_id}/eligibility` (student only) compares the logged-in student's profile with a job and returns `result` (`ELIGIBLE` / `NOT_ELIGIBLE` / `INCOMPLETE_PROFILE`), `eligible`, every criterion (required value, your value, message, `passed`/`failed`/`not_evaluated`), `reasons`, `failed_requirements`, `missing_skills`, `missing_preferred_skills`, `missing_certifications` and `incomplete_fields`. The button is on the job details page.
+
+It is **purely rule-based** (`backend/app/ai/eligibility.py`: plain functions, no database, no ML), so every verdict can be explained:
+1. CGPA at least the job's minimum (0 = no minimum)
+2. Branch in the job's allowed list (empty list = all branches)
+3. Backlogs at most the job's limit (empty = no limit)
+4. **All required** skills held (preferred skills are reported but never block)
+5. All required certifications held (case/spacing-insensitive)
+6. Experience months at least the minimum (from your experience entries, overlaps counted once, ongoing roles counted to today)
+7. Job open and deadline not passed
+
+If the profile lacks data for a rule (e.g. no CGPA or branch), that rule is `not_evaluated` rather than silently passing; a genuine failure always makes the result `NOT_ELIGIBLE`. Results are computed from the current profile on every request and are not stored. They are guidance only: the company and placement officers decide.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 129 tests: health, auth/RBAC, models, profile, companies/jobs
-cd frontend && npm test                            # 38 tests: auth, profile, jobs, job details, companies
+cd backend && .venv\Scripts\python -m pytest     # 177 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility
+cd frontend && npm test                            # 44 tests: auth, profile, jobs, job details, companies, eligibility
 cd frontend && npm run lint && npm run build
 ```
 
