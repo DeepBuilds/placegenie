@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-4 are done: setup, database, authentication and role-based access, and the student profile.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-5 are done: setup, database, authentication and role-based access, the student profile, and companies/jobs.
 
 ## Tech stack
 | Layer | Technology |
@@ -97,10 +97,28 @@ Students manage their profile at `/student/profile`: personal and academic detai
 | `PUT` / `DELETE /students/me/{certifications,projects,experiences}/{id}` | edit / remove item |
 | `GET /branches`, `/skills`, `/job-roles` | lookup lists (any logged-in user) |
 
+## Companies and jobs (Phase 5)
+Students browse `/student/jobs` (search + filters + pagination), `/student/jobs/:id` (full requirements) and `/student/companies`. Students only ever see **open** jobs; coordinators can see and manage everything. Eligibility is stored on the job (min CGPA, max backlogs, experience, allowed branches, required certifications, skills with required/preferred weight); no eligibility *calculation* exists yet (Phase 6).
+
+Load the fictional demo data (10 companies, 19 jobs, varied requirements) once:
+```bash
+cd backend && .venv\Scripts\python -m app.database.seed_demo
+```
+It is re-runnable and never overwrites edits. It is not run at startup, so companies a coordinator deletes stay deleted.
+
+| Endpoint | Who | Purpose |
+|---|---|---|
+| `GET /companies`, `/companies/{id}`, `/companies/{id}/jobs` | any logged-in user | list/search companies, detail, a company's jobs |
+| `GET /jobs`, `/jobs/{id}` | any logged-in user | search + filter (`q, company_id, job_type, role_id, skill_id, branch_id, location, max_min_cgpa, hide_expired, sort, limit, offset`) |
+| `POST /companies`, `PUT/DELETE /companies/{id}` | coordinator | manage companies |
+| `POST /jobs`, `PUT/DELETE /jobs/{id}` | coordinator | manage jobs (PUT replaces the job incl. skills/branches/certifications) |
+
+Companies or jobs that already have student applications cannot be deleted (409): close the job instead. Deleting a company deletes its jobs. The coordinator management screens are part of the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` as a coordinator.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 85 tests: health, auth/RBAC, database models, student profile
-cd frontend && npm test                            # 22 tests: protected routes, login, register, profile page
+cd backend && .venv\Scripts\python -m pytest     # 129 tests: health, auth/RBAC, models, profile, companies/jobs
+cd frontend && npm test                            # 38 tests: auth, profile, jobs, job details, companies
 cd frontend && npm run lint && npm run build
 ```
 

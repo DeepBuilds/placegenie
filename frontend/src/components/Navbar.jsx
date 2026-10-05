@@ -13,7 +13,7 @@ export default function Navbar() {
 
   return (
     <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
+      <nav className="mx-auto flex max-w-6xl flex-wrap gap-y-2 items-center justify-between px-4 py-3">
         <Link to="/" className="text-lg font-semibold text-indigo-600">
           PlaceGenie AI
         </Link>
@@ -24,9 +24,17 @@ export default function Navbar() {
                 Dashboard
               </Link>
               {user.role === 'student' && (
-                <Link to="/student/profile" className="text-slate-700 hover:text-indigo-600">
-                  My profile
-                </Link>
+                <>
+                  <Link to="/student/jobs" className="text-slate-700 hover:text-indigo-600">
+                    Jobs
+                  </Link>
+                  <Link to="/student/companies" className="text-slate-700 hover:text-indigo-600">
+                    Companies
+                  </Link>
+                  <Link to="/student/profile" className="text-slate-700 hover:text-indigo-600">
+                    My profile
+                  </Link>
+                </>
               )}
               <span className="hidden text-slate-500 sm:inline">
                 {user.full_name} <span className="text-xs">({user.role})</span>

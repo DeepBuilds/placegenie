@@ -7,6 +7,9 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Register from './pages/Register'
 import StudentHome from './pages/StudentHome'
+import Companies from './pages/student/Companies'
+import JobDetails from './pages/student/JobDetails'
+import Jobs from './pages/student/Jobs'
 import Profile from './pages/student/Profile'
 import ProtectedRoute from './routes/ProtectedRoute'
 
@@ -25,6 +28,9 @@ export default function App() {
               <Route element={<ProtectedRoute role="student" />}>
                 <Route path="/student" element={<StudentHome />} />
                 <Route path="/student/profile" element={<Profile />} />
+                <Route path="/student/jobs" element={<Jobs />} />
+                <Route path="/student/jobs/:id" element={<JobDetails />} />
+                <Route path="/student/companies" element={<Companies />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
                 <Route path="/coordinator" element={<CoordinatorHome />} />

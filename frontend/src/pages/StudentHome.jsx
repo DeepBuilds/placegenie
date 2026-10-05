@@ -23,9 +23,14 @@ export default function StudentHome() {
           Welcome, <strong>{me.full_name}</strong> ({me.email}).
         </p>
       )}
-      <Link to="/student/profile" className="mt-4 inline-block rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
-        Complete my profile
-      </Link>
+      <div className="mt-4 flex flex-wrap gap-3">
+        <Link to="/student/profile" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
+          Complete my profile
+        </Link>
+        <Link to="/student/jobs" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Browse jobs
+        </Link>
+      </div>
       <p className="mt-4 text-sm text-slate-500">Dashboard features arrive in later phases.</p>
     </section>
   )
