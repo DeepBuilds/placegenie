@@ -1,15 +1,36 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+import logging
+from contextlib import asynccontextmanager
 
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+
+import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.core.config import get_settings
-from app.routers import health
+from app.database.base import Base
+from app.database.session import engine
+from app.routers import auth, coordinators, health, students
 
 settings = get_settings()
+logger = logging.getLogger("placegenie")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    # Create missing tables. Phase 2 will replace this with the full schema.
+    try:
+        Base.metadata.create_all(engine)
+    except SQLAlchemyError:
+        logger.warning("Could not reach MySQL at startup; check DB_* values in backend/.env.")
+    yield
+
 
 app = FastAPI(
     title=settings.app_name,
     version=settings.app_version,
     description="Intelligent placement assistant API. Guidance only; not a recruitment decision-maker.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -20,5 +41,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.exception_handler(SQLAlchemyError)
+async def database_error_handler(_: Request, exc: SQLAlchemyError):
+    logger.exception("Database error")
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "The database is temporarily unavailable. Please try again later."},
+    )
+
+
 API_PREFIX = "/api/v1"
 app.include_router(health.router, prefix=API_PREFIX)
+app.include_router(auth.router, prefix=API_PREFIX)
+app.include_router(students.router, prefix=API_PREFIX)
+app.include_router(coordinators.router, prefix=API_PREFIX)

@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status: Phase 1 (project setup).** Only a health check and an app shell exist so far.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. The auth API (Phase 3 backend) is written and tested; the React login/registration UI is not built yet.
 
 ## Tech stack
 | Layer | Technology |
@@ -80,3 +80,12 @@ In development Vite proxies `/api/*` to the backend, so the browser talks to one
 cd backend && .venv\Scripts\python -m pytest
 cd frontend && npm run lint && npm run build
 ```
+
+## Database tables (Phase 2)
+23 tables, created automatically when the backend starts (`create_all`; no migrations yet):
+`users, students, coordinators` (identity and profiles) - `branches, skills, job_roles` (lookups) -
+`student_skills, certifications, projects, experiences, student_preferred_roles, student_preferred_companies` (profile) -
+`companies, jobs, job_skills, job_allowed_branches, job_required_certifications` (jobs and eligibility rules) -
+`resumes, resume_analyses, resume_detected_skills` - `applications, interview_stages` - `chat_messages`.
+Eligibility results, recommendations and skill gaps are deliberately not stored; they are computed on request.
+Model tests run on in-memory SQLite (`pytest`); the schema also compiles for MySQL.
