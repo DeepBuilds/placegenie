@@ -11,7 +11,19 @@ from app.core.config import get_settings
 from app.database.base import Base
 from app.database.seed import seed_reference_data
 from app.database.session import SessionLocal, engine
-from app.routers import auth, companies, coordinators, health, jobs, recommendations, reference, resumes, students
+from app.routers import (
+    applications,
+    auth,
+    companies,
+    coordinators,
+    health,
+    interviews,
+    jobs,
+    recommendations,
+    reference,
+    resumes,
+    students,
+)
 
 settings = get_settings()
 logger = logging.getLogger("placegenie")
@@ -78,3 +90,5 @@ app.include_router(companies.router, prefix=API_PREFIX)
 app.include_router(jobs.router, prefix=API_PREFIX)
 app.include_router(recommendations.router, prefix=API_PREFIX)
 app.include_router(resumes.router, prefix=API_PREFIX)
+app.include_router(applications.router, prefix=API_PREFIX)
+app.include_router(interviews.router, prefix=API_PREFIX)

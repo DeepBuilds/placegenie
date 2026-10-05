@@ -3,12 +3,14 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as appsApi from '../api/applications'
 import * as jobsApi from '../api/jobs'
 import SkillGapPanel from '../components/jobs/SkillGapPanel'
 import JobDetails from '../pages/student/JobDetails'
 import SkillGap from '../pages/student/SkillGap'
 
 vi.mock('../api/jobs')
+vi.mock('../api/applications')
 
 const matched = (id, name, required = true, level = 'intermediate') => ({ skill_id: id, name, category: null, required, essential: false, weight: 2, student_level: level })
 const missing = (id, name, priority, reasons, required = true) => ({
@@ -41,6 +43,7 @@ const renderPanel = (props = { jobId: 7 }) =>
 beforeEach(() => {
   vi.resetAllMocks()
   jobsApi.getSkillGap.mockResolvedValue(base)
+  appsApi.getMyApplications.mockResolvedValue({ items: [], total: 0, counts: {} })
 })
 
 describe('skill gap panel', () => {

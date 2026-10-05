@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getCompany, getJob } from '../../api/jobs'
+import ApplyPanel from '../../components/applications/ApplyPanel'
 import EligibilityChecker from '../../components/jobs/EligibilityChecker'
 import SkillGapPanel from '../../components/jobs/SkillGapPanel'
 import SkillChips from '../../components/jobs/SkillChips'
@@ -95,6 +96,8 @@ export default function JobDetails() {
           {formatDeadline(job.deadline, job.is_expired)}
         </p>
       </header>
+
+      <ApplyPanel key={`apply-${job.id}`} jobId={job.id} isExpired={job.is_expired} />
 
       <EligibilityChecker key={job.id} jobId={job.id} />
 

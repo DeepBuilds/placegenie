@@ -1,5 +1,6 @@
 """Import every model so Base.metadata knows all tables."""
 from app.models.application import (
+    FINAL_STATUSES,
     Application,
     ApplicationStatus,
     InterviewStage,
@@ -31,7 +32,7 @@ from app.models.student import (
 from app.models.user import Coordinator, Role, User
 
 __all__ = [
-    "Application", "ApplicationStatus", "Branch", "Certification", "ChatMessage", "ChatRole",
+    "FINAL_STATUSES", "Application", "ApplicationStatus", "Branch", "Certification", "ChatMessage", "ChatRole",
     "Company", "Coordinator", "Experience", "InterviewStage", "InterviewStageType", "Job",
     "JobAllowedBranch", "JobRequiredCertification", "JobRole", "JobSkill", "JobStatus", "JobType",
     "Proficiency", "Project", "Resume", "ResumeAnalysis", "ResumeDetectedSkill", "Role", "Skill",

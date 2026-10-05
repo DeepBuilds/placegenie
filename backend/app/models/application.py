@@ -24,12 +24,18 @@ class ApplicationStatus(str, enum.Enum):
     HR_INTERVIEW = "hr_interview"
     SELECTED = "selected"
     REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"  # set by the student; keeps the record for coordinators
+
+
+# Statuses after which a student can no longer withdraw.
+FINAL_STATUSES = {ApplicationStatus.SELECTED, ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN}
 
 
 class InterviewStageType(str, enum.Enum):
     ONLINE_ASSESSMENT = "online_assessment"
     TECHNICAL_INTERVIEW = "technical_interview"
     HR_INTERVIEW = "hr_interview"
+    OTHER = "other"  # group discussion, managerial round, ...
 
 
 class StageOutcome(str, enum.Enum):

@@ -7,7 +7,11 @@ import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Register from './pages/Register'
 import StudentHome from './pages/StudentHome'
+import ApplicationDetails from './pages/student/ApplicationDetails'
+import Applications from './pages/student/Applications'
 import Companies from './pages/student/Companies'
+import InterviewDetails from './pages/student/InterviewDetails'
+import Interviews from './pages/student/Interviews'
 import JobDetails from './pages/student/JobDetails'
 import Jobs from './pages/student/Jobs'
 import Profile from './pages/student/Profile'
@@ -39,6 +43,10 @@ export default function App() {
                 <Route path="/student/resume" element={<Resume />} />
                 <Route path="/student/resume/analysis" element={<ResumeAnalysis />} />
                 <Route path="/student/skill-gap" element={<SkillGap />} />
+                <Route path="/student/applications" element={<Applications />} />
+                <Route path="/student/applications/:id" element={<ApplicationDetails />} />
+                <Route path="/student/interviews" element={<Interviews />} />
+                <Route path="/student/interviews/:id" element={<InterviewDetails />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
                 <Route path="/coordinator" element={<CoordinatorHome />} />

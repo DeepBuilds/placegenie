@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-9 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, and skill-gap analysis.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-10 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, and application and interview tracking.
 
 ## Tech stack
 | Layer | Technology |
@@ -178,10 +178,35 @@ Response: `match_percentage`, `required_match_percentage`, counts, `matched_skil
 - **Priority of a missing skill:** *high* = a required skill that is **essential** (the job gives it weight 3 or more out of 5) or that is **frequently requested** (asked for by at least 30% of currently open jobs); *medium* = any other required skill, or a preferred skill that is frequently requested; *low* = any other preferred skill. Within a level, skills are ordered by the job's weight, then how many open jobs ask for them, then name.
 - Every priority carries plain-language reasons ("Required for this job", "Essential: weight 3 out of 5", "Asked for in 6 of 18 open jobs (33%)"). There are no learning times, courses or outcome claims.
 
+## Applications and interviews (Phase 10)
+Students apply from a job's page, follow their applications at `/student/applications` (details at `/student/applications/:id`) and keep a diary of interviews at `/student/interviews` (details at `/student/interviews/:id`).
+
+**Rules**
+- **One application per student per job** (unique in the database too). A second attempt returns 409. After *withdrawing*, applying again re-opens the same record.
+- Applying needs an open job whose deadline has not passed. Nobody is blocked for being ineligible (the company and placement cell decide): the apply button first shows what the student does not meet and asks them to confirm. The application page shows the *current* eligibility, computed live.
+- **Statuses:** `applied -> shortlisted -> online_assessment -> technical_interview -> hr_interview -> selected`, or `rejected`, or `withdrawn`.
+- **Only coordinators set the official status** (so placement statistics cannot be edited by the students they describe). Students can withdraw their own application, except after `selected` or `rejected`.
+- **Interviews** (online assessment, technical, HR, other) have a date/time, notes, and a result (pending / passed / not cleared). Students manage interviews on their own applications; coordinators can add or edit them on any. Times are stored exactly as entered (one college, one time zone). Upcoming = now or later; past = earlier; a past interview with no result is flagged "add the result".
+
+| Endpoint | Who | Purpose |
+|---|---|---|
+| `POST /applications` `{job_id}` | student | apply (201; 409 duplicate / deadline; 404 unknown or closed job) |
+| `GET /applications/me?status=&job_id=` | student | my applications + per-status counts |
+| `POST /applications/{id}/withdraw` | student | withdraw |
+| `GET /applications?status=&job_id=&company_id=&q=&limit=&offset=` | coordinator | all applications |
+| `PATCH /applications/{id}/status` `{status}` | coordinator | set the official status |
+| `GET /applications/{id}` | owner or coordinator | detail incl. interviews and live eligibility |
+| `POST /applications/{id}/interviews` | owner or coordinator | add an interview |
+| `GET /interviews/me?when=upcoming\|past\|unscheduled\|all` | student | my interview diary + counts |
+| `GET /interviews?when=` | coordinator | everyone's interviews |
+| `GET` / `PATCH` / `DELETE /interviews/{id}` | owner or coordinator | view / change (only the fields sent) / delete |
+
+Another student's application or interview is always "not found" (404). The coordinator screens for managing statuses belong to the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` signed in as a coordinator.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 338 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap
-cd frontend && npm test                            # 89 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap
+cd backend && .venv\Scripts\python -m pytest     # 417 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews
+cd frontend && npm test                            # 125 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews
 cd frontend && npm run lint && npm run build
 ```
 

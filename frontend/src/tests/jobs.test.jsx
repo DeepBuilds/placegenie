@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import * as appsApi from '../api/applications'
 import * as jobsApi from '../api/jobs'
 import * as profileApi from '../api/profile'
 import Companies from '../pages/student/Companies'
@@ -11,6 +12,7 @@ import Jobs from '../pages/student/Jobs'
 import { formatBacklogs, formatCgpa, formatDeadline, formatExperience } from '../utils/jobs'
 
 vi.mock('../api/jobs')
+vi.mock('../api/applications')
 vi.mock('../api/profile')
 
 const company = { id: 1, name: 'Helix Secure', industry: 'Cyber Security', location: 'Noida' }
@@ -44,6 +46,7 @@ beforeEach(() => {
   vi.resetAllMocks()
   jobsApi.getJobs.mockResolvedValue(page([makeJob()]))
   jobsApi.getCompanies.mockResolvedValue({ items: [{ ...company, website: null, description: 'Security firm.', open_jobs: 2 }], total: 1, limit: 100, offset: 0 })
+  appsApi.getMyApplications.mockResolvedValue({ items: [], total: 0, counts: {} })
   jobsApi.getJob.mockResolvedValue(makeJob())
   jobsApi.getSkillGap.mockResolvedValue({ has_requirements: false, summary: 'This job lists no specific skills, so there is nothing to compare.', notes: [], matched_skills: [], missing_skills: [], priority: [], disclaimer: 'x', job: { id: 7 } })
   jobsApi.getCompany.mockResolvedValue({ ...company, website: 'https://helix.example.com', description: 'We protect things.', open_jobs: 2 })
