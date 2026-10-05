@@ -9,6 +9,7 @@ from app.models import (
     Application,
     Branch,
     Certification,
+    ChatConversation,
     ChatMessage,
     ChatRole,
     Company,
@@ -36,7 +37,7 @@ EXPECTED_TABLES = {
     "certifications", "projects", "experiences", "student_preferred_roles",
     "student_preferred_companies", "companies", "jobs", "job_skills", "job_allowed_branches",
     "job_required_certifications", "resumes", "resume_analyses", "resume_detected_skills",
-    "applications", "interview_stages", "chat_messages",
+    "applications", "interview_stages", "chat_conversations", "chat_messages",
 }
 
 
@@ -171,7 +172,7 @@ def test_deleting_user_removes_student_and_all_children(db_session):
     skill = Skill(name="Python")
     student.skills.append(StudentSkill(skill=skill))
     student.certifications.append(Certification(name="X"))
-    student.chat_messages.append(ChatMessage(role=ChatRole.USER, content="hi"))
+    student.conversations.append(ChatConversation(title="hi", messages=[ChatMessage(role=ChatRole.USER, content="hi")]))
     resume = Resume(
         student=student, file_path="a.pdf", original_name="cv.pdf", mime_type="application/pdf",
         size_bytes=10, extracted_text="text",
@@ -190,7 +191,7 @@ def test_deleting_user_removes_student_and_all_children(db_session):
     db.delete(student.user)
     db.commit()
 
-    for model in (Student, StudentSkill, Certification, ChatMessage, Resume, ResumeAnalysis,
+    for model in (Student, StudentSkill, Certification, ChatConversation, ChatMessage, Resume, ResumeAnalysis,
                   ResumeDetectedSkill, Application, InterviewStage):
         assert db.scalar(select(func.count()).select_from(model)) == 0, model.__name__
     # shared reference data must survive

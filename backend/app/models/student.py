@@ -95,7 +95,7 @@ class Student(TimestampMixin, Base):
     preferred_companies = relationship("Company", secondary=student_preferred_companies)
     resumes = relationship("Resume", back_populates="student", cascade="all, delete-orphan")
     applications = relationship("Application", back_populates="student", cascade="all, delete-orphan")
-    chat_messages = relationship("ChatMessage", back_populates="student", cascade="all, delete-orphan")
+    conversations = relationship("ChatConversation", back_populates="student", cascade="all, delete-orphan")
 
 
 class StudentSkill(TimestampMixin, Base):

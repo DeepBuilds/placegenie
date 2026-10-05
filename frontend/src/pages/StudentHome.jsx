@@ -27,7 +27,10 @@ export default function StudentHome() {
         <Link to="/student/profile" className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-700">
           Complete my profile
         </Link>
- <Link to="/student/applications" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+ <Link to="/student/chat" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
+          Ask the assistant
+        </Link>
+        <Link to="/student/applications" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">
           My applications
         </Link>
         <Link to="/student/interviews" className="rounded-md border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">

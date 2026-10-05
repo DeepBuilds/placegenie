@@ -31,8 +31,20 @@ class Settings(BaseSettings):
     resume_max_mb: int = 5
     resume_max_pages: int = 10
 
+    # Chatbot. LLM_PROVIDER: none | anthropic | openai (openai also covers OpenAI-compatible servers
+    # via LLM_BASE_URL). With "none" or a missing key the built-in placement guide answers instead.
     llm_provider: str = "none"
     llm_api_key: str = ""
+    llm_model: str = ""  # empty = a sensible default for the chosen provider
+    llm_base_url: str = ""  # empty = the provider's public endpoint
+    llm_timeout_seconds: float = 20.0
+    llm_max_tokens: int = 600
+    llm_share_profile: bool = True  # send a small, contact-free profile summary to the LLM for personalised answers
+
+    chat_rate_limit_per_minute: int = 15
+    chat_max_message_chars: int = 1000
+    chat_max_messages_per_conversation: int = 200
+    chat_history_turns: int = 10  # earlier messages given to the LLM as context
 
     @property
     def database_url(self) -> URL:

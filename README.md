@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-10 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, and application and interview tracking.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-11 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, application and interview tracking, and the placement chatbot.
 
 ## Tech stack
 | Layer | Technology |
@@ -203,10 +203,48 @@ Students apply from a job's page, follow their applications at `/student/applica
 
 Another student's application or interview is always "not found" (404). The coordinator screens for managing statuses belong to the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` signed in as a coordinator.
 
+## Placement chatbot (Phase 11)
+Students chat with the assistant at `/student/chat`: several saved conversations, a "New chat" button, and delete-one / clear-all-history.
+
+**How a message is answered** (`backend/app/services/chatbot_engine.py`; the routes only call a service):
+1. **Hiring decisions and schedules** ("will Google select me?", "when are the results?") get an honest "I do not have real-time information", never a guess.
+2. **Questions about the student's own data** (eligibility, skill gap, recommendations, applications, interviews, resume, profile) are answered **directly from the database** with the same engines as the rest of the app. A language model is never used for these, so the numbers cannot be invented.
+3. **Greetings and help** get short fixed replies.
+4. **General placement questions** (interview prep, resumes, aptitude, job roles...) go to an LLM *if one is configured*, given reference notes from the built-in guide; otherwise, or if the LLM fails, the **built-in placement guide** answers. The guide is about 30 curated topics matched with TF-IDF similarity (`backend/app/ai/chatbot/knowledge.py`), not hundreds of canned replies.
+
+Every assistant message carries a label saying how it was produced (your PlaceGenie data / built-in guide / AI-written / AI unavailable / something I cannot know).
+
+**Running without an AI (default).** `LLM_PROVIDER=none` (or an empty key) works fully: the guide and the data answers above. Nothing else is needed.
+
+**Connecting an LLM.** Set in `backend/.env` (restart the backend):
+
+| Variable | Meaning |
+|---|---|
+| `LLM_PROVIDER` | `none` (default), `anthropic`, or `openai` (OpenAI or any OpenAI-compatible server) |
+| `LLM_API_KEY` | your key; never commit it (`.env` is git-ignored) |
+| `LLM_MODEL`, `LLM_BASE_URL` | optional; defaults are `claude-haiku-4-5-20251001` and `gpt-4o-mini`, and each provider's public endpoint |
+| `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS` | optional limits (20 s, 600 tokens) |
+| `LLM_SHARE_PROFILE` | `true` sends a short summary (branch, CGPA, skills, preferred roles, counts of applications) so answers can be personal; `false` sends only the question |
+
+Providers live in `backend/app/ai/chatbot/providers/` behind a small `LLMProvider` interface (`generate(system, turns)`); adding another is one class plus one line in `factory.py`. A missing key, an unknown provider name, a timeout, a 4xx/5xx, a bad reply or any provider error never breaks the chat: the student gets the built-in guide's answer with a notice, and the details go only to the server log (never the key).
+
+**Privacy.** The LLM never receives the student's name, email, phone number, resume text, interview notes or messages from other students. Chat history stores only the message text, who said it, how a reply was produced and a timestamp (no prompts, profile snapshots or IP addresses). Students can delete one conversation or all of them; deleting an account removes its chats.
+
+**Limits.** Messages are at most 1000 characters (`CHAT_MAX_MESSAGE_CHARS`), 15 per minute per student (`CHAT_RATE_LIMIT_PER_MINUTE`, answered with 429 and a `Retry-After` header) and 200 per conversation (`CHAT_MAX_MESSAGES_PER_CONVERSATION`).
+
+| Endpoint (students only) | Purpose |
+|---|---|
+| `GET /chat/info` | AI or built-in-guide mode, starter questions, disclaimer |
+| `POST /chat/messages` `{message, conversation_id?}` | send a message; starts a conversation when none is given |
+| `GET /chat/conversations`, `GET /chat/conversations/{id}` | list (most recent first) / open one with its messages |
+| `DELETE /chat/conversations/{id}`, `DELETE /chat/conversations` | delete one / all |
+
+Another student's conversation is always "not found" (404). The assistant is guidance only and says so on the page.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 417 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews
-cd frontend && npm test                            # 125 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews
+cd backend && .venv\Scripts\python -m pytest     # 618 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot
+cd frontend && npm test                            # 148 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot
 cd frontend && npm run lint && npm run build
 ```
 

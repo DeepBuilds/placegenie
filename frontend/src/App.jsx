@@ -9,6 +9,7 @@ import Register from './pages/Register'
 import StudentHome from './pages/StudentHome'
 import ApplicationDetails from './pages/student/ApplicationDetails'
 import Applications from './pages/student/Applications'
+import Chatbot from './pages/student/Chatbot'
 import Companies from './pages/student/Companies'
 import InterviewDetails from './pages/student/InterviewDetails'
 import Interviews from './pages/student/Interviews'
@@ -43,6 +44,7 @@ export default function App() {
                 <Route path="/student/resume" element={<Resume />} />
                 <Route path="/student/resume/analysis" element={<ResumeAnalysis />} />
                 <Route path="/student/skill-gap" element={<SkillGap />} />
+                <Route path="/student/chat" element={<Chatbot />} />
                 <Route path="/student/applications" element={<Applications />} />
                 <Route path="/student/applications/:id" element={<ApplicationDetails />} />
                 <Route path="/student/interviews" element={<Interviews />} />

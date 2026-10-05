@@ -43,6 +43,9 @@ export default function Navbar() {
                   <Link to="/student/interviews" className="text-slate-700 hover:text-indigo-600">
                     Interviews
                   </Link>
+                  <Link to="/student/chat" className="text-slate-700 hover:text-indigo-600">
+                    Assistant
+                  </Link>
                   <Link to="/student/resume" className="text-slate-700 hover:text-indigo-600">
                     Resume
                   </Link>

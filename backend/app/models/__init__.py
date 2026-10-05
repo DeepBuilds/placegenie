@@ -7,7 +7,7 @@ from app.models.application import (
     InterviewStageType,
     StageOutcome,
 )
-from app.models.chat import ChatMessage, ChatRole
+from app.models.chat import ChatConversation, ChatMessage, ChatRole
 from app.models.company import (
     Company,
     Job,
@@ -32,7 +32,7 @@ from app.models.student import (
 from app.models.user import Coordinator, Role, User
 
 __all__ = [
-    "FINAL_STATUSES", "Application", "ApplicationStatus", "Branch", "Certification", "ChatMessage", "ChatRole",
+    "FINAL_STATUSES", "Application", "ApplicationStatus", "Branch", "Certification", "ChatConversation", "ChatMessage", "ChatRole",
     "Company", "Coordinator", "Experience", "InterviewStage", "InterviewStageType", "Job",
     "JobAllowedBranch", "JobRequiredCertification", "JobRole", "JobSkill", "JobStatus", "JobType",
     "Proficiency", "Project", "Resume", "ResumeAnalysis", "ResumeDetectedSkill", "Role", "Skill",

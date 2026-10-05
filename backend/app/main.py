@@ -14,6 +14,7 @@ from app.database.session import SessionLocal, engine
 from app.routers import (
     applications,
     auth,
+    chat,
     companies,
     coordinators,
     health,
@@ -92,3 +93,4 @@ app.include_router(recommendations.router, prefix=API_PREFIX)
 app.include_router(resumes.router, prefix=API_PREFIX)
 app.include_router(applications.router, prefix=API_PREFIX)
 app.include_router(interviews.router, prefix=API_PREFIX)
+app.include_router(chat.router, prefix=API_PREFIX)
