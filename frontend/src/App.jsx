@@ -26,6 +26,7 @@ import Jobs from './pages/student/Jobs'
 import Profile from './pages/student/Profile'
 import Recommendations from './pages/student/Recommendations'
 import Resume from './pages/student/Resume'
+import StudentReport from './pages/student/Report'
 import ResumeAnalysis from './pages/student/ResumeAnalysis'
 import SkillGap from './pages/student/SkillGap'
 import ProtectedRoute from './routes/ProtectedRoute'
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="/student/applications/:id" element={<ApplicationDetails />} />
                 <Route path="/student/interviews" element={<Interviews />} />
                 <Route path="/student/interviews/:id" element={<InterviewDetails />} />
+                <Route path="/student/report" element={<StudentReport />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
                 <Route path="/coordinator" element={<CoordinatorDashboard />} />

@@ -413,7 +413,7 @@ def report(client, ch, kind):
 
 def test_reports_are_listed(client, ch):
     listed = client.get(f"{CO}/reports", headers=ch).json()
-    assert [r["kind"] for r in listed] == ["students", "applications", "placements", "companies", "skills"]
+    assert [r["kind"] for r in listed] == ["students", "applications", "placements", "companies", "jobs", "skills"]
     assert all(r["url"].endswith(".csv") and r["description"] for r in listed)
 
 

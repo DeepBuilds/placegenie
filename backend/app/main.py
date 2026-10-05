@@ -23,6 +23,7 @@ from app.routers import (
     jobs,
     recommendations,
     reference,
+    reports,
     resumes,
     students,
 )
@@ -96,3 +97,4 @@ app.include_router(applications.router, prefix=API_PREFIX)
 app.include_router(interviews.router, prefix=API_PREFIX)
 app.include_router(chat.router, prefix=API_PREFIX)
 app.include_router(dashboard.router, prefix=API_PREFIX)
+app.include_router(reports.router, prefix=API_PREFIX)

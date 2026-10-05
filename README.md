@@ -281,10 +281,32 @@ How the numbers are defined (all computed from the database on each request; not
 
 Authorization tests (`tests/test_authorization_matrix.py`) list every API route once as public, any-user, coordinator-only or student-only, and check the real status codes for visitors, students and coordinators for each. A new route that is not classified fails the suite, so access rules cannot be forgotten.
 
+## Reporting and analytics (Phase 14)
+Two reports, both counted from the database every time they are opened (nothing is stored or cached), and both built from services that already existed, so a report can never disagree with a page.
+
+**Student report** (`/student/report`, `GET /reports/me`, student only): the student's own applications and status distribution, interviews (passed / not cleared / pending, pass rate), overall outcome (placed, in process, applied, rejected, not applied), the top recommended jobs, skill gaps and the six-step placement progress. Reuses the student dashboard sections plus the application and interview lists. Export: **Download CSV** (`GET /reports/me.csv`, one row per application) and **Print / save as PDF** (the browser's print dialog; the navigation is hidden when printing).
+
+**Coordinator report** (`/coordinator/reports`, `GET /coordinators/report`, coordinator only):
+
+| Section | Chart | Definition |
+|---|---|---|
+| Student placement statistics | stage bars; placed vs not placed per branch and per CGPA band | placed = a student with at least one *selected* application; the rate needs >= 5 students (otherwise the page says "needs 5+ students") |
+| Application status distribution | bars (only statuses that occur) | every application record, withdrawn included |
+| Company-wise applications | stacked bars: in process / selected / rejected / applied or withdrawn | one bar per company that has applications; the page says how many have none |
+| Job-wise applications | table, busiest 15 shown | one row per job; awaiting + in process + selected + rejected + withdrawn = applications (tested) |
+| Selected students | table | one row per selected application, newest first |
+| Common skill gaps | bars: students lacking each skill | skills that **open jobs** ask for, with `students lacking = all students - students having it`; skills every student has are left out |
+| Placement progress | bars | the same milestones each student sees, so the two always agree |
+| Interview results | stacked bar and pass rate | pass rate = passed / (passed + not cleared); results still pending are not counted |
+
+Export: CSV downloads for students, applications, placements, companies, **jobs (new)** and skills, plus Print / save as PDF. Charts are plain HTML bars (no chart library), every bar prints its number, and a chart with nothing to show is replaced by a sentence saying why. Only comparisons that mean something are drawn: no pie charts of two numbers, no chart of one value.
+
+Efficiency: the coordinator report loads the cohort once and groups it in memory; the student report loads the applications and interviews once and shares them with the dashboard sections. Tests count the SQL statements and fail if the number grows with the number of students or applications.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 887 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, authorization matrix
-cd frontend && npm test                            # 217 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar, coordinator pages
+cd backend && .venv\Scripts\python -m pytest     # 925 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, reports and analytics, authorization matrix
+cd frontend && npm test                            # 233 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar, coordinator pages, reports and charts
 cd frontend && npm run lint && npm run build
 ```
 

@@ -1,4 +1,5 @@
 import client from './client'
+import { downloadFile } from './download'
 
 const data = (r) => r.data
 const clean = (params = {}) => Object.fromEntries(Object.entries(params).filter(([, v]) => v !== '' && v != null))
@@ -11,21 +12,10 @@ export const getCohortProgress = () => client.get('/coordinators/progress').then
 export const getAnalytics = () => client.get('/coordinators/analytics').then(data)
 export const getReports = () => client.get('/coordinators/reports').then(data)
 
+export const getCoordinatorReport = () => client.get('/coordinators/report').then(data)
+
 /** Downloads a CSV through the authenticated client (a plain link would not carry the login token). */
-export async function downloadReport(kind) {
-  const res = await client.get(`/coordinators/reports/${kind}.csv`, { responseType: 'blob' })
-  const match = /filename="([^"]+)"/.exec(res.headers['content-disposition'] ?? '')
-  const filename = match ? match[1] : `placegenie-${kind}.csv`
-  const url = URL.createObjectURL(res.data)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
-  return filename
-}
+export const downloadReport = (kind) => downloadFile(`/coordinators/reports/${kind}.csv`, `placegenie-${kind}.csv`)
 
 // Existing management APIs (shared with the rest of the app, authorised as coordinator on the server).
 export const getApplications = (params) => client.get('/applications', { params: clean(params) }).then(data)

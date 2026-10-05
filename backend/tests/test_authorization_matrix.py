@@ -20,7 +20,7 @@ COORDINATOR_ONLY = {
     ("GET", "/applications"), ("PATCH", "/applications/1/status"), ("GET", "/interviews"),
     ("GET", "/coordinators/me"), ("GET", "/coordinators/dashboard"), ("GET", "/coordinators/students"),
     ("GET", "/coordinators/students/1"), ("GET", "/coordinators/progress"), ("GET", "/coordinators/analytics"),
-    ("GET", "/coordinators/reports"), ("GET", "/coordinators/reports/students.csv"),
+    ("GET", "/coordinators/reports"), ("GET", "/coordinators/report"), ("GET", "/coordinators/reports/students.csv"),
 }
 STUDENT_ONLY = {
     ("GET", "/students/me"), ("PUT", "/students/me"), ("PUT", "/students/me/skills"), ("PUT", "/students/me/preferences"),
@@ -32,6 +32,7 @@ STUDENT_ONLY = {
     ("POST", "/resumes/1/analyze"), ("GET", "/resumes/1/file"), ("POST", "/resumes/1/sync-skills"),
     ("POST", "/applications"), ("GET", "/applications/me"), ("POST", "/applications/1/withdraw"),
     ("GET", "/interviews/me"),
+    ("GET", "/reports/me"), ("GET", "/reports/me.csv"),
     ("GET", "/chat/info"), ("POST", "/chat/messages"), ("GET", "/chat/conversations"), ("DELETE", "/chat/conversations"),
     ("GET", "/chat/conversations/1"), ("DELETE", "/chat/conversations/1"),
 }

@@ -6,3 +6,7 @@ export const STAGE_STYLE = {
   rejected: 'bg-red-100 text-red-800', not_applied: 'bg-slate-100 text-slate-700',
 }
 export const STAGE_LABEL = Object.fromEntries(STAGE_OPTIONS)
+
+export const STAGE_BAR = {
+  placed: 'bg-emerald-500', in_process: 'bg-indigo-500', applied: 'bg-sky-500', rejected: 'bg-red-500', not_applied: 'bg-slate-400',
+}

@@ -52,3 +52,9 @@ export function validateInterview({ scheduled_at, notes }) {
   if (notes && notes.length > 2000) errors.notes = 'Notes can be at most 2000 characters.'
   return errors
 }
+
+// Bar colours that match the status badges above.
+export const STATUS_BAR = {
+  applied: 'bg-sky-500', shortlisted: 'bg-indigo-500', online_assessment: 'bg-violet-500', technical_interview: 'bg-amber-500',
+  hr_interview: 'bg-orange-500', selected: 'bg-emerald-500', rejected: 'bg-red-500', withdrawn: 'bg-slate-400',
+}

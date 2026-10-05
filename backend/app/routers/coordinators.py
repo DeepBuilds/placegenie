@@ -8,7 +8,8 @@ from app.database.session import get_db
 from app.models import User
 from app.schemas.auth import UserOut
 from app.schemas.coordinator import Analytics, CohortProgress, CoordinatorDashboard, StudentDetail, StudentPage
-from app.services import coordinator_service, report_service
+from app.schemas.report import CoordinatorReport
+from app.services import coordinator_service, report_service, reporting_service
 
 # Every route here is coordinator-only. Students get 403; visitors who are not logged in get 401.
 router = APIRouter(prefix="/coordinators", tags=["Coordinators"], dependencies=[Depends(require_coordinator)])
@@ -61,6 +62,12 @@ def progress(db: Session = Depends(get_db)):
 @router.get("/analytics", response_model=Analytics)
 def analytics(db: Session = Depends(get_db)):
     return coordinator_service.build_analytics(db)
+
+
+@router.get("/report", response_model=CoordinatorReport)
+def placement_report(db: Session = Depends(get_db)):
+    """The placement cell's report: placement statistics, company-wise and job-wise applications, selected students, skill gaps and progress."""
+    return reporting_service.coordinator_report(db)
 
 
 @router.get("/reports")

@@ -285,10 +285,17 @@ SECTIONS = {
 }
 
 
-def build_dashboard(db: Session, user: User, today: date | None = None, only: set[str] | None = None) -> DashboardOut:
+def new_context(db: Session, user: User, today: date | None = None) -> _Context:
+    """Shared, lazily loaded data for one student; lets a caller (the student report) reuse what the sections load."""
+    return _Context(db, user, profile_service.get_student(db, user), today or date.today())
+
+
+def build_dashboard(
+    db: Session, user: User, today: date | None = None, only: set[str] | None = None, ctx: _Context | None = None,
+) -> DashboardOut:
     """`only` limits the work to some sections (a coordinator viewing one student does not need the rest)."""
-    student = profile_service.get_student(db, user)
-    ctx = _Context(db, user, student, today or date.today())
+    ctx = ctx or new_context(db, user, today)
+    student = ctx.student
 
     results: dict[str, object] = {}
     errors: dict[str, str] = {}

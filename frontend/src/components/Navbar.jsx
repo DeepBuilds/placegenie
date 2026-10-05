@@ -12,6 +12,7 @@ const STUDENT_LINKS = [
   ['Applications', '/student/applications'],
   ['Interviews', '/student/interviews'],
   ['Assistant', '/student/chat'],
+  ['Report', '/student/report'],
   ['Resume', '/student/resume'],
   ['My profile', '/student/profile'],
 ]
@@ -24,7 +25,7 @@ const COORDINATOR_LINKS = [
   ['Applications', '/coordinator/applications'],
   ['Progress', '/coordinator/progress'],
   ['Analytics', '/coordinator/analytics'],
-  ['Reports', '/coordinator/reports'],
+  ['Report', '/coordinator/reports'],
 ]
 
 const linkClass = ({ isActive }) =>
@@ -44,7 +45,7 @@ export default function Navbar() {
   const links = !user ? [] : user.role === 'student' ? STUDENT_LINKS : COORDINATOR_LINKS
 
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="border-b border-slate-200 bg-white print:hidden">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3" aria-label="Main">
         <Link to="/" className="shrink-0 text-lg font-semibold text-indigo-600">
           PlaceGenie AI

@@ -13,7 +13,6 @@ import Companies from '../pages/coordinator/Companies'
 import Dashboard from '../pages/coordinator/Dashboard'
 import Jobs from '../pages/coordinator/Jobs'
 import Progress from '../pages/coordinator/Progress'
-import Reports from '../pages/coordinator/Reports'
 import StudentDetail from '../pages/coordinator/StudentDetail'
 import Students from '../pages/coordinator/Students'
 import ProtectedRoute from '../routes/ProtectedRoute'
@@ -55,7 +54,6 @@ function renderAt(path, user = { id: 2, role: 'coordinator', full_name: 'Dr. Rao
             <Route path="/coordinator/applications" element={<Applications />} />
             <Route path="/coordinator/progress" element={<Progress />} />
             <Route path="/coordinator/analytics" element={<Analytics />} />
-            <Route path="/coordinator/reports" element={<Reports />} />
           </Route>
           <Route path="/student" element={<p>student home</p>} />
           <Route path="/login" element={<p>login page</p>} />
@@ -75,14 +73,13 @@ beforeEach(() => {
 
 describe('access control in the browser', () => {
   it('sends a student away from every coordinator page', async () => {
-    for (const path of ['/coordinator', '/coordinator/students', '/coordinator/reports']) {
+    for (const path of ['/coordinator', '/coordinator/students']) {
       const { unmount } = renderAt(path, { id: 1, role: 'student', full_name: 'Asha' })
       expect(await screen.findByText('student home')).toBeInTheDocument()
       unmount()
     }
     expect(api.getCoordinatorDashboard).not.toHaveBeenCalled()
     expect(api.getStudents).not.toHaveBeenCalled()
-    expect(api.getReports).not.toHaveBeenCalled()
   })
 
   it('sends a visitor who is not logged in to the login page', async () => {
@@ -433,7 +430,7 @@ describe('applications', () => {
   })
 })
 
-describe('progress, analytics and reports', () => {
+describe('progress and analytics', () => {
   it('shows the cohort funnel and who needs attention', async () => {
     api.getCohortProgress.mockResolvedValue({
       total_students: 7,
@@ -463,22 +460,5 @@ describe('progress, analytics and reports', () => {
     expect(screen.getByText('50%')).toBeInTheDocument()
     expect(screen.getByText('Pass rate: 50%')).toBeInTheDocument()
     expect(screen.getByText('6 open jobs · 2 students (29%)')).toBeInTheDocument()
-  })
-
-  it('downloads a report through the API client', async () => {
-    api.getReports.mockResolvedValue([{ kind: 'students', description: 'All students', url: '/x' }, { kind: 'skills', description: 'Skills', url: '/y' }])
-    api.downloadReport.mockResolvedValue('placegenie-students-2026-10-05.csv')
-    renderAt('/coordinator/reports')
-    await userEvent.click(await screen.findByRole('button', { name: 'Download Students report' }))
-    expect(api.downloadReport).toHaveBeenCalledWith('students')
-    expect(await screen.findByRole('status')).toHaveTextContent('Downloaded placegenie-students-2026-10-05.csv')
-  })
-
-  it('shows a message when a download fails', async () => {
-    api.getReports.mockResolvedValue([{ kind: 'students', description: 'All students', url: '/x' }])
-    api.downloadReport.mockRejectedValue({ response: { status: 403, data: { detail: 'Coordinator access required.' } } })
-    renderAt('/coordinator/reports')
-    await userEvent.click(await screen.findByRole('button', { name: 'Download Students report' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('Coordinator access required.')
   })
 })

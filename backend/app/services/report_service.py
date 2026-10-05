@@ -8,13 +8,16 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Company, Job, JobStatus
+from app.schemas.report import StudentReport
 from app.services import coordinator_service as cs
+from app.services import reporting_service
 
 REPORTS = {
     "students": "All students with their profile, resume and placement status",
     "applications": "Every application with student, company, job and status",
     "placements": "Students who have been selected, with company and job",
     "companies": "Per company: jobs, applications, shortlisted, selected, rejected",
+    "jobs": "Per job: applications by outcome (also jobs nobody applied to)",
     "skills": "Skills asked for by open jobs and how many students have them",
 }
 _DANGEROUS_START = ("=", "+", "-", "@", "\t", "\r")
@@ -70,9 +73,25 @@ def build_report(db: Session, kind: str) -> tuple[str, str]:
         open_jobs = dict(db.execute(select(Company.name, func.count(Job.id)).join(Job, Job.company_id == Company.id).where(Job.status == JobStatus.OPEN).group_by(Company.name)).all())
         header = ["Company", "Jobs", "Open jobs", "Applications", "Shortlisted / in process", "Selected", "Rejected"]
         rows = [[r.company, r.jobs, open_jobs.get(r.company, 0), r.applications, r.shortlisted, r.selected, r.rejected] for r in cs.company_stats(db, c)]
+    elif kind == "jobs":
+        header = ["Job", "Company", "Job status", "Deadline", "Applications", "Awaiting review", "In process", "Selected", "Rejected", "Withdrawn"]
+        rows = [
+            [r.title, r.company, r.status, r.deadline.isoformat() if r.deadline else "", r.applications, r.awaiting_review, r.in_process, r.selected, r.rejected, r.withdrawn]
+            for r in reporting_service.job_stats(db, c)
+        ]
     else:  # skills
         header = ["Skill", "Open jobs requiring it", "Students who have it", "% of students"]
         rows = [[r.skill, r.jobs_requiring, r.students_with, r.students_percent] for r in cs.skill_supply(db, c, limit=None)]
 
     return f"placegenie-{kind}-{stamp}.csv", to_csv(header, rows)
 
+
+def build_student_csv(report: StudentReport) -> tuple[str, str]:
+    """The student's own applications with their outcome and interview count, as a CSV."""
+    header = ["Job", "Company", "Status", "Applied on", "Last updated", "Interviews recorded", "Next interview"]
+    rows = [
+        [a.job_title, a.company, a.status.replace("_", " "), a.applied_at.date().isoformat(), a.updated_at.date().isoformat(),
+         a.interviews, a.next_interview.strftime("%Y-%m-%d %H:%M") if a.next_interview else ""]
+        for a in report.applications
+    ]
+    return f"placegenie-my-report-{date.today().isoformat()}.csv", to_csv(header, rows)

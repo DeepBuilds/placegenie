@@ -254,8 +254,8 @@ def student_detail(db: Session, student_id: int) -> StudentDetail:
 # =====================================================================
 # Cohort progress
 # =====================================================================
-def build_progress(db: Session) -> CohortProgress:
-    c = load_cohort(db)
+def build_progress(db: Session, c: Cohort | None = None) -> CohortProgress:
+    c = c or load_cohort(db)
     total = len(c.students)
     pct = lambda n: round(100 * n / total) if total else 0  # noqa: E731
     ready = {s.id for s in c.students if profile_service.compute_completeness(s).score >= dashboard_service.PROFILE_READY_PERCENT}
@@ -315,9 +315,8 @@ def company_stats(db: Session, c: Cohort) -> list[CompanyStats]:
     return sorted(rows, key=lambda r: (-r.applications, r.company.lower()))
 
 
-def build_analytics(db: Session) -> Analytics:
-    c = load_cohort(db)
-    counts = Counter(a.status.value for a in c.applications)
+def students_by_branch_and_cgpa(c: Cohort) -> tuple[list[BranchStats], list[CgpaBand]]:
+    """Placement numbers per branch and per CGPA band (a rate is hidden for a group smaller than MIN_STUDENTS_FOR_RATE)."""
 
     def group(keyfn):
         groups: dict[str, list[Student]] = defaultdict(list)
@@ -347,14 +346,23 @@ def build_analytics(db: Session) -> Analytics:
         if members:
             n, _, placed = cohort_numbers(members)
             by_cgpa.append(CgpaBand(band=label, students=n, placed=placed, placement_rate=_rate(placed, n)))
+    return by_branch, by_cgpa
 
+
+def interview_outcomes(c: Cohort) -> InterviewOutcomes:
     outcomes = Counter(i.outcome.value for i in c.interviews)
     decided = outcomes["passed"] + outcomes["failed"]
+    return InterviewOutcomes(
+        total=len(c.interviews), passed=outcomes["passed"], not_cleared=outcomes["failed"], pending=outcomes["pending"],
+        pass_rate=round(100 * outcomes["passed"] / decided) if decided else None)
+
+
+def build_analytics(db: Session) -> Analytics:
+    c = load_cohort(db)
+    counts = Counter(a.status.value for a in c.applications)
+    by_branch, by_cgpa = students_by_branch_and_cgpa(c)
     return Analytics(
         status_funnel=[StatusCount(status=s, count=counts.get(s, 0)) for s in STATUS_ORDER],
         by_company=company_stats(db, c)[:10], by_branch=by_branch, by_cgpa=by_cgpa, skill_supply=skill_supply(db, c),
-        interview_outcomes=InterviewOutcomes(
-            total=len(c.interviews), passed=outcomes["passed"], not_cleared=outcomes["failed"], pending=outcomes["pending"],
-            pass_rate=round(100 * outcomes["passed"] / decided) if decided else None),
-        min_group_size=MIN_STUDENTS_FOR_RATE,
+        interview_outcomes=interview_outcomes(c), min_group_size=MIN_STUDENTS_FOR_RATE,
     )
