@@ -1,84 +1,98 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { homePathForRole } from '../utils/roles'
+
+// [label, path, match only this exact path?]
+const STUDENT_LINKS = [
+  ['Dashboard', '/student', true],
+  ['Recommended', '/student/recommendations'],
+  ['Jobs', '/student/jobs'],
+  ['Skill gap', '/student/skill-gap'],
+  ['Companies', '/student/companies'],
+  ['Applications', '/student/applications'],
+  ['Interviews', '/student/interviews'],
+  ['Assistant', '/student/chat'],
+  ['Resume', '/student/resume'],
+  ['My profile', '/student/profile'],
+]
+
+const linkClass = ({ isActive }) =>
+  isActive ? 'font-semibold text-indigo-700' : 'text-slate-700 hover:text-indigo-600'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const [open, setOpen] = useState(false)
 
   const handleLogout = async () => {
+    setOpen(false)
     await logout()
     navigate('/login', { replace: true })
   }
 
+  const links = !user ? [] : user.role === 'student' ? STUDENT_LINKS : [['Dashboard', homePathForRole(user.role), true]]
+
   return (
     <header className="border-b border-slate-200 bg-white">
-      <nav className="mx-auto flex max-w-6xl flex-wrap gap-y-2 items-center justify-between px-4 py-3">
-        <Link to="/" className="text-lg font-semibold text-indigo-600">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3" aria-label="Main">
+        <Link to="/" className="shrink-0 text-lg font-semibold text-indigo-600">
           PlaceGenie AI
         </Link>
-        <div className="flex items-center gap-4 text-sm">
-          {user ? (
-            <>
-              <Link to={homePathForRole(user.role)} className="text-slate-700 hover:text-indigo-600">
-                Dashboard
-              </Link>
-              {user.role === 'student' && (
-                <>
-                  <Link to="/student/recommendations" className="text-slate-700 hover:text-indigo-600">
-                    Recommended
-                  </Link>
-                  <Link to="/student/jobs" className="text-slate-700 hover:text-indigo-600">
-                    Jobs
-                  </Link>
-                  <Link to="/student/skill-gap" className="text-slate-700 hover:text-indigo-600">
-                    Skill gap
-                  </Link>
-                  <Link to="/student/companies" className="text-slate-700 hover:text-indigo-600">
-                    Companies
-                  </Link>
-                  <Link to="/student/applications" className="text-slate-700 hover:text-indigo-600">
-                    Applications
-                  </Link>
-                  <Link to="/student/interviews" className="text-slate-700 hover:text-indigo-600">
-                    Interviews
-                  </Link>
-                  <Link to="/student/chat" className="text-slate-700 hover:text-indigo-600">
-                    Assistant
-                  </Link>
-                  <Link to="/student/resume" className="text-slate-700 hover:text-indigo-600">
-                    Resume
-                  </Link>
-                  <Link to="/student/profile" className="text-slate-700 hover:text-indigo-600">
-                    My profile
-                  </Link>
-                </>
-              )}
-              <span className="hidden text-slate-500 sm:inline">
-                {user.full_name} <span className="text-xs">({user.role})</span>
-              </span>
-              <button
-                onClick={handleLogout}
-                className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-100"
-              >
+
+        {user ? (
+          <>
+            <ul className="hidden items-center gap-4 text-sm lg:flex">
+              {links.map(([label, to, end]) => (
+                <li key={to}>
+                  <NavLink to={to} end={end} className={linkClass}>{label}</NavLink>
+                </li>
+              ))}
+            </ul>
+            <div className="hidden items-center gap-3 text-sm lg:flex">
+              <span className="max-w-40 truncate text-slate-500" title={user.full_name}>{user.full_name}</span>
+              <button onClick={handleLogout} className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-100">
                 Log out
               </button>
-            </>
-          ) : (
-            <>
-              <Link to="/login" className="text-slate-700 hover:text-indigo-600">
-                Log in
-              </Link>
-              <Link
-                to="/register"
-                className="rounded-md bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700"
-              >
-                Register
-              </Link>
-            </>
-          )}
-        </div>
+            </div>
+            <button
+              type="button"
+              className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-100 lg:hidden"
+              aria-label="Menu"
+              aria-expanded={open}
+              aria-controls="mobile-menu"
+              onClick={() => setOpen((o) => !o)}
+            >
+              {open ? '✕ Close' : '☰ Menu'}
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center gap-4 text-sm">
+            <Link to="/login" className="text-slate-700 hover:text-indigo-600">Log in</Link>
+            <Link to="/register" className="rounded-md bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700">Register</Link>
+          </div>
+        )}
       </nav>
+
+      {user && open && (
+        <div id="mobile-menu" className="border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
+          <ul className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+            {links.map(([label, to, end]) => (
+              <li key={to}>
+                <NavLink to={to} end={end} className={(s) => `block rounded px-2 py-2 ${linkClass(s)}`} onClick={() => setOpen(false)}>
+                  {label}
+                </NavLink>
+              </li>
+            ))}
+          </ul>
+          <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
+            <span className="truncate text-slate-500">{user.full_name}</span>
+            <button onClick={handleLogout} className="rounded-md border border-slate-300 px-3 py-1.5 text-slate-700 hover:bg-slate-100">
+              Log out
+            </button>
+          </div>
+        </div>
+      )}
     </header>
   )
 }

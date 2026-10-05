@@ -142,6 +142,34 @@ describe('sending messages', () => {
   })
 })
 
+describe('opening with a ready-made question (dashboard quick actions)', () => {
+  const renderAsk = (path) => render(<MemoryRouter initialEntries={[path]}><Chatbot /></MemoryRouter>)
+
+  it('asks the question once, as soon as the assistant is ready', async () => {
+    api.sendChatMessage.mockResolvedValue(reply('Think aloud and test with an example.', 'guide', { user_message: msg(1, 'user', 'How should I prepare for a technical interview?') }))
+    renderAsk('/student/chat?ask=How%20should%20I%20prepare%20for%20a%20technical%20interview%3F')
+    expect(await screen.findByText('Think aloud and test with an example.')).toBeInTheDocument()
+    expect(api.sendChatMessage).toHaveBeenCalledTimes(1)
+    expect(api.sendChatMessage).toHaveBeenCalledWith('How should I prepare for a technical interview?', null)
+    expect(within(screen.getByRole('log', { name: 'Messages' })).getByText('How should I prepare for a technical interview?')).toBeInTheDocument()
+  })
+
+  it('does nothing special without the parameter', async () => {
+    renderAsk('/student/chat')
+    await screen.findByText('Built-in guide')
+    expect(api.sendChatMessage).not.toHaveBeenCalled()
+  })
+
+  it('does not ask again when the student sends their own message later', async () => {
+    api.sendChatMessage.mockResolvedValue(reply('ok'))
+    renderAsk('/student/chat?ask=hello%20there')
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledTimes(1))
+    await userEvent.type(screen.getByLabelText('Your message'), 'second question{Enter}')
+    await waitFor(() => expect(api.sendChatMessage).toHaveBeenCalledTimes(2))
+    expect(api.sendChatMessage).toHaveBeenLastCalledWith('second question', 7)
+  })
+})
+
 describe('errors', () => {
   it('shows the server message, keeps the typed text and removes the unsent bubble', async () => {
     api.sendChatMessage.mockRejectedValue({ response: { status: 429, data: { detail: 'You are sending messages too quickly. Please wait a few seconds and try again.' } } })

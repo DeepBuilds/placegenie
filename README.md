@@ -3,7 +3,7 @@
 Web-based placement assistant for college students and placement coordinators.
 It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-11 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, application and interview tracking, and the placement chatbot.
+> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-12 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, application and interview tracking, the placement chatbot, and the student dashboard.
 
 ## Tech stack
 | Layer | Technology |
@@ -241,10 +241,26 @@ Providers live in `backend/app/ai/chatbot/providers/` behind a small `LLMProvide
 
 Another student's conversation is always "not found" (404). The assistant is guidance only and says so on the page.
 
+## Student dashboard (Phase 12)
+The student's home page (`/student`) is one summary of the whole journey. It re-implements nothing: `GET /api/v1/dashboard` (student only, read-only) composes the existing services, so its numbers always match the individual pages, and every figure is computed from the database on each request.
+
+| Widget | Shows | Built from |
+|---|---|---|
+| Summary cards | profile %, eligible jobs, active applications, upcoming interviews | profile, recommendations, applications, interviews |
+| Next step + progress | 6 milestones (profile >= 80%, resume, applied, shortlisted, interview recorded, offer) and the first thing left to do | all of the above |
+| Recommended for you | best 5 matches with score, eligibility and "applied" | recommendations (Phase 7) |
+| Eligible opportunities | how many open jobs you qualify for, the best ones you have not applied to, and those closing within 7 days | eligibility (Phase 6) |
+| Applications / Interviews | per-status bars, recent applications, upcoming interviews, past ones missing a result, pass rate | Phase 10 |
+| Resume | status, completeness, skills found, top suggestions | Phase 8 |
+| Skill gaps | skills missing from the jobs that actually fit you (score >= 30%, at least 3 jobs), and the "closest opportunity" that only lacks skills | Phases 7 and 9 |
+| Placement statistics | open jobs, companies hiring, closing this week, share you are eligible for, most requested skills (marked "you have it" / "missing"), interview pass rate | job data |
+
+Each widget has its own loading skeleton, empty state ("what to do next") and error state. If one section fails on the server it comes back as `null` with a message in `errors`, and the rest of the page still loads (that widget offers "Try again"). Quick actions: Complete Profile, Upload Resume, Find Jobs, View Recommendations, Check Skill Gaps, Prepare for Interview (opens the assistant with that question already asked) and Open Chatbot; the one matching your next step is highlighted. The navigation bar collapses into a menu on small screens.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 618 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot
-cd frontend && npm test                            # 148 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot
+cd backend && .venv\Scripts\python -m pytest     # 653 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard
+cd frontend && npm test                            # 184 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar
 cd frontend && npm run lint && npm run build
 ```
 

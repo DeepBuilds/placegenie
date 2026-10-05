@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   deleteAllConversations,
   deleteConversation,
@@ -20,6 +21,9 @@ const GREETING = {
 }
 
 export default function Chatbot() {
+  // /student/chat?ask=... (used by the dashboard's quick actions) asks that question once on opening
+  const [params, setParams] = useSearchParams()
+  const pendingAsk = useRef(params.get('ask'))
   const [info, setInfo] = useState(null)
   const [conversations, setConversations] = useState([])
   const [activeId, setActiveId] = useState(null) // null = a new conversation that is not saved yet
@@ -109,6 +113,16 @@ export default function Chatbot() {
       if (mine === requestId.current) setSending(false)
     }
   }
+
+  useEffect(() => {
+    if (pendingAsk.current && info) {
+      const question = pendingAsk.current
+      pendingAsk.current = null
+      setParams({}, { replace: true })
+      send(question)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info])
 
   const remove = async (c) => {
     if (!window.confirm(`Delete the conversation "${c.title}"?`)) return

@@ -6,10 +6,10 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
 import Register from './pages/Register'
-import StudentHome from './pages/StudentHome'
 import ApplicationDetails from './pages/student/ApplicationDetails'
 import Applications from './pages/student/Applications'
 import Chatbot from './pages/student/Chatbot'
+import Dashboard from './pages/student/Dashboard'
 import Companies from './pages/student/Companies'
 import InterviewDetails from './pages/student/InterviewDetails'
 import Interviews from './pages/student/Interviews'
@@ -35,7 +35,7 @@ export default function App() {
               <Route path="/register" element={<Register />} />
 
               <Route element={<ProtectedRoute role="student" />}>
-                <Route path="/student" element={<StudentHome />} />
+                <Route path="/student" element={<Dashboard />} />
                 <Route path="/student/profile" element={<Profile />} />
                 <Route path="/student/jobs" element={<Jobs />} />
                 <Route path="/student/jobs/:id" element={<JobDetails />} />
