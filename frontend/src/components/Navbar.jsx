@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { homePathForRole } from '../utils/roles'
 
 // [label, path, match only this exact path?]
 const STUDENT_LINKS = [
@@ -15,6 +14,17 @@ const STUDENT_LINKS = [
   ['Assistant', '/student/chat'],
   ['Resume', '/student/resume'],
   ['My profile', '/student/profile'],
+]
+
+const COORDINATOR_LINKS = [
+  ['Dashboard', '/coordinator', true],
+  ['Students', '/coordinator/students'],
+  ['Companies', '/coordinator/companies'],
+  ['Jobs', '/coordinator/jobs'],
+  ['Applications', '/coordinator/applications'],
+  ['Progress', '/coordinator/progress'],
+  ['Analytics', '/coordinator/analytics'],
+  ['Reports', '/coordinator/reports'],
 ]
 
 const linkClass = ({ isActive }) =>
@@ -31,7 +41,7 @@ export default function Navbar() {
     navigate('/login', { replace: true })
   }
 
-  const links = !user ? [] : user.role === 'student' ? STUDENT_LINKS : [['Dashboard', homePathForRole(user.role), true]]
+  const links = !user ? [] : user.role === 'student' ? STUDENT_LINKS : COORDINATOR_LINKS
 
   return (
     <header className="border-b border-slate-200 bg-white">

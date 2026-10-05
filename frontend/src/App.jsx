@@ -1,7 +1,15 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import { AuthProvider } from './context/AuthContext'
-import CoordinatorHome from './pages/CoordinatorHome'
+import CoordinatorAnalytics from './pages/coordinator/Analytics'
+import CoordinatorApplications from './pages/coordinator/Applications'
+import CoordinatorCompanies from './pages/coordinator/Companies'
+import CoordinatorDashboard from './pages/coordinator/Dashboard'
+import CoordinatorJobs from './pages/coordinator/Jobs'
+import CoordinatorProgress from './pages/coordinator/Progress'
+import CoordinatorReports from './pages/coordinator/Reports'
+import CoordinatorStudentDetail from './pages/coordinator/StudentDetail'
+import CoordinatorStudents from './pages/coordinator/Students'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import NotFound from './pages/NotFound'
@@ -51,7 +59,15 @@ export default function App() {
                 <Route path="/student/interviews/:id" element={<InterviewDetails />} />
               </Route>
               <Route element={<ProtectedRoute role="coordinator" />}>
-                <Route path="/coordinator" element={<CoordinatorHome />} />
+                <Route path="/coordinator" element={<CoordinatorDashboard />} />
+                <Route path="/coordinator/students" element={<CoordinatorStudents />} />
+                <Route path="/coordinator/students/:id" element={<CoordinatorStudentDetail />} />
+                <Route path="/coordinator/companies" element={<CoordinatorCompanies />} />
+                <Route path="/coordinator/jobs" element={<CoordinatorJobs />} />
+                <Route path="/coordinator/applications" element={<CoordinatorApplications />} />
+                <Route path="/coordinator/progress" element={<CoordinatorProgress />} />
+                <Route path="/coordinator/analytics" element={<CoordinatorAnalytics />} />
+                <Route path="/coordinator/reports" element={<CoordinatorReports />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

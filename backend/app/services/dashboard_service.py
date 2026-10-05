@@ -285,13 +285,17 @@ SECTIONS = {
 }
 
 
-def build_dashboard(db: Session, user: User, today: date | None = None) -> DashboardOut:
+def build_dashboard(db: Session, user: User, today: date | None = None, only: set[str] | None = None) -> DashboardOut:
+    """`only` limits the work to some sections (a coordinator viewing one student does not need the rest)."""
     student = profile_service.get_student(db, user)
     ctx = _Context(db, user, student, today or date.today())
 
     results: dict[str, object] = {}
     errors: dict[str, str] = {}
     for name, builder in SECTIONS.items():
+        if only is not None and name not in only:
+            results[name] = None  # not requested: neither built nor reported as an error
+            continue
         try:
             results[name] = builder(ctx)
         except SQLAlchemyError:

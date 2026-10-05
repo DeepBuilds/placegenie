@@ -257,10 +257,34 @@ The student's home page (`/student`) is one summary of the whole journey. It re-
 
 Each widget has its own loading skeleton, empty state ("what to do next") and error state. If one section fails on the server it comes back as `null` with a message in `errors`, and the rest of the page still loads (that widget offers "Try again"). Quick actions: Complete Profile, Upload Resume, Find Jobs, View Recommendations, Check Skill Gaps, Prepare for Interview (opens the assistant with that question already asked) and Open Chatbot; the one matching your next step is highlighted. The navigation bar collapses into a menu on small screens.
 
+## Coordinator dashboard (Phase 13)
+Log in as a coordinator (`python -m app.database.create_coordinator`) to reach `/coordinator`. Coordinator pages and APIs are separate from the student ones: a student who opens a coordinator page is redirected to their own dashboard, and every coordinator API answers a student with **403** (and a visitor who is not logged in with **401**). Nothing is duplicated: companies, jobs and applications use the Phase 5 and Phase 10 endpoints unchanged; the new `/coordinators/*` endpoints only add the views that did not exist (cohort statistics, student search, reports).
+
+| Page | What the coordinator can do | API |
+|---|---|---|
+| Dashboard | totals (students, companies, jobs, applications), shortlisted / selected students, rejected applications, placement rate, application funnel, latest applications, "needs attention" (unreviewed applications, jobs closing in 7 days, jobs nobody applied to, interviews this week) | `GET /coordinators/dashboard` |
+| Students | search (name, email, college), filter (branch, year, minimum CGPA, resume, profile >= 80%, placement stage), sort, page | `GET /coordinators/students` |
+| Student profile | profile, resume, skill gaps, the same 6-step progress the student sees, applications (change status here), interviews | `GET /coordinators/students/{id}` |
+| Companies | view, search, add, edit, delete | `GET/POST /companies`, `PUT/DELETE /companies/{id}` |
+| Jobs | view, filter (company, status, search), add, edit (skills with importance and weight, allowed branches, certifications), delete | `GET/POST /jobs`, `PUT/DELETE /jobs/{id}` |
+| Applications | filter by company, job, status or search; set the official status | `GET /applications`, `PATCH /applications/{id}/status` |
+| Progress | how many students reached each milestone, where everyone is now, who needs attention | `GET /coordinators/progress` |
+| Analytics | applications by company, placement by branch and by CGPA band, interview pass rate, skills asked by jobs against skills students have | `GET /coordinators/analytics` |
+| Reports | CSV downloads: students, applications, placements, companies, skills | `GET /coordinators/reports`, `GET /coordinators/reports/{kind}.csv` |
+
+How the numbers are defined (all computed from the database on each request; nothing is stored or estimated):
+- **Placement rate** = students with at least one *selected* application / registered students. It is shown only when there are at least 5 students (otherwise the page says why it is hidden). Branch and CGPA-band rates use the same rule for their own group size.
+- **Shortlisted students** = students with an application being considered (shortlisted, online assessment, technical or HR interview). **Placement stage** of a student: *placed* (any selected application), *in process*, *applied*, *rejected* (every application rejected) or *not applied* (none, or only withdrawn ones).
+- The cohort **progress** counts the same six milestones each student sees on their own dashboard, so the two views always agree; a test adds up every student's own tracker and compares.
+- Deleting a company or job that has applications is refused (409) with a message; close the job instead. A student's withdrawal cannot be overridden by a coordinator.
+- CSV files add an apostrophe in front of any cell that starts with `= + - @` so a student's name cannot run as a spreadsheet formula, and are downloaded through the logged-in API client (a plain link would not carry the token).
+
+Authorization tests (`tests/test_authorization_matrix.py`) list every API route once as public, any-user, coordinator-only or student-only, and check the real status codes for visitors, students and coordinators for each. A new route that is not classified fails the suite, so access rules cannot be forgotten.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 653 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard
-cd frontend && npm test                            # 184 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar
+cd backend && .venv\Scripts\python -m pytest     # 887 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, authorization matrix
+cd frontend && npm test                            # 217 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar, coordinator pages
 cd frontend && npm run lint && npm run build
 ```
 

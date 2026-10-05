@@ -48,11 +48,14 @@ describe('navbar', () => {
     expect(screen.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('aria-current', 'page')
   })
 
-  it('shows coordinators only their dashboard', () => {
-    renderNav(coordinator, '/coordinator')
+  it('shows coordinators their own pages and none of the student pages', () => {
+    renderNav(coordinator, '/coordinator/jobs')
     const nav = within(screen.getByRole('navigation', { name: 'Main' }))
+    const labels = nav.getAllByRole('link').map((a) => a.textContent).filter((t) => t !== 'PlaceGenie AI')
+    expect(labels).toEqual(['Dashboard', 'Students', 'Companies', 'Jobs', 'Applications', 'Progress', 'Analytics', 'Reports'])
     expect(nav.getByRole('link', { name: 'Dashboard' })).toHaveAttribute('href', '/coordinator')
-    expect(nav.queryByRole('link', { name: 'Jobs' })).not.toBeInTheDocument()
+    expect(nav.getByRole('link', { name: 'Jobs' })).toHaveAttribute('aria-current', 'page')
+    expect(nav.queryByRole('link', { name: 'Recommended' })).not.toBeInTheDocument()
   })
 
   it('has a menu button that opens and closes the small-screen menu', async () => {
