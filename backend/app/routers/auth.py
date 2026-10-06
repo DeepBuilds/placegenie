@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.deps import get_current_user
@@ -17,9 +17,12 @@ def register(data: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    """Log in as a student or coordinator. The returned `user.role` decides the dashboard."""
-    return auth_service.login(db, data)
+def login(data: LoginRequest, request: Request, db: Session = Depends(get_db)):
+    """Log in as a student or coordinator. The returned `user.role` decides the dashboard.
+
+    Repeated failures for one email or from one address are answered with 429 for a while.
+    """
+    return auth_service.login(db, data, request.client.host if request.client else None)
 
 
 @router.get("/me", response_model=UserOut)

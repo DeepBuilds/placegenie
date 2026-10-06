@@ -4,13 +4,13 @@
 
 ```bash
 # backend (from backend/, virtual environment active or use .venv\Scripts\python)
-python -m pytest                       # all 1,040 tests, about 15 minutes
+python -m pytest                       # all 1,046 tests, about 15 minutes
 python -m pytest tests/test_jobs.py    # one file
 python -m pytest -k eligibility        # by name
 python -m pytest -x -q                 # stop at the first failure, short output
 
 # frontend (from frontend/)
-npm test                               # 233 tests, about 15 seconds
+npm test                               # 234 tests, about 15 seconds
 npm run lint                           # oxlint
 npm run build                          # production build must succeed
 ```

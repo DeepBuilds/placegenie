@@ -23,6 +23,10 @@ class Settings(BaseSettings):
     jwt_secret_key: str = ""
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    # Failed logins allowed within the window before further attempts get 429 (slows password guessing)
+    login_max_failures_per_email: int = 5
+    login_max_failures_per_ip: int = 30
+    login_window_minutes: int = 15
 
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 

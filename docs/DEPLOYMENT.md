@@ -131,6 +131,6 @@ as a service (for example with NSSM), and serve `frontend\dist` with IIS (URL Re
 `index.html`, reverse-proxy `/api` to port 8000) or nginx for Windows.
 
 ## Known limitations
-- Login attempts are not rate limited; on a public server put a limit in nginx (`limit_req`) on `/api/v1/auth/login`.
+- Failed logins are limited per email and per address in each server process (a restart or a second worker has its own count). For a public server, also add an nginx `limit_req` on `/api/v1/auth/login`; uvicorn's `--proxy-headers` (above) makes the real client address visible to the limiter.
 - A token stays valid until it expires (`ACCESS_TOKEN_EXPIRE_MINUTES`) even after logout; keep the lifetime short.
 - No schema migration tool (see above).

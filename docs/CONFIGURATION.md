@@ -35,6 +35,9 @@ Defined in `backend/app/core/config.py`. Restart the backend after a change.
 | `JWT_SECRET_KEY` | *(empty)* | **secret** - signs login tokens. Must be at least 32 characters; the app refuses to issue tokens otherwise. Generate one: `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Changing it logs everyone out |
 | `JWT_ALGORITHM` | `HS256` | leave as is |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | how long a login lasts |
+| `LOGIN_MAX_FAILURES_PER_EMAIL` | `5` | failed logins for one email within the window; then further attempts (even with the right password) get 429 until the oldest failure is older than the window. A successful login resets the count |
+| `LOGIN_MAX_FAILURES_PER_IP` | `30` | failed logins from one network address within the window, across all emails |
+| `LOGIN_WINDOW_MINUTES` | `15` | the window for both limits. Counts are kept in memory per server process (a restart clears them) |
 | `CORS_ORIGINS` | `http://localhost:5173,http://127.0.0.1:5173` | comma-separated list of the frontend addresses allowed to call the API from a browser. Use the exact production URL (scheme + host + port), never `*` |
 
 ### Resume uploads

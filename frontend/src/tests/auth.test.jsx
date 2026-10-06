@@ -90,6 +90,18 @@ describe('login form', () => {
     expect(getToken()).toBeNull()
   })
 
+  it('explains a temporary lock after too many failed attempts', async () => {
+    authApi.loginRequest.mockRejectedValue({
+      response: { status: 429, data: { detail: 'Too many failed login attempts. Please try again in 15 minutes.' } },
+    })
+    renderApp('/login')
+    await userEvent.type(screen.getByLabelText('Email'), 'a@x.com')
+    await userEvent.type(screen.getByLabelText('Password'), 'wrongpass1')
+    await userEvent.click(screen.getByRole('button', { name: 'Log in' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Please try again in 15 minutes.')
+    expect(getToken()).toBeNull()
+  })
+
   it('stores the token and opens the right dashboard on success', async () => {
     authApi.loginRequest.mockResolvedValue({ access_token: 'tok', user: coordinator })
     renderApp('/login')

@@ -7,8 +7,8 @@ Status at the end of the project (verified 6 October 2026 on Windows 11, Python 
 - [x] Database connects: health shows `"database": {"connected": true}`; tables and reference data are created at startup
 - [x] Frontend production build succeeds (`npm run build`)
 - [x] Frontend lint is clean (`npm run lint`)
-- [x] Backend tests: **1,040 passed**
-- [x] Frontend tests: **233 passed**
+- [x] Backend tests: **1,046 passed**
+- [x] Frontend tests: **234 passed**
 
 ## Features (each covered by automated tests and checked in the browser)
 - [x] Registration, login, logout, role-based pages and API (student / coordinator)
@@ -26,6 +26,7 @@ Status at the end of the project (verified 6 October 2026 on Windows 11, Python 
 ## Security
 - [x] `backend/.env`, `frontend/.env`, `database/*.local.sql` and uploaded files are git-ignored (checked with `git check-ignore`)
 - [x] Only `.env.example` files (placeholders) are committed; no password, key or token in the repository or its history
+- [x] Failed logins limited per email and per address (429 with `Retry-After`)
 - [x] Passwords hashed with bcrypt; JWT secret must be 32+ characters; the role is re-read from the database on each request
 - [x] Every API route's access rule is tested for visitors, students and coordinators
 - [x] Students cannot read or change another student's data (404)
@@ -56,7 +57,7 @@ Status at the end of the project (verified 6 October 2026 on Windows 11, Python 
 - [ ] Two browser windows (one private) for coordinator and student
 
 ## Known limitations (documented, accepted for this version)
-- No login attempt limit; tokens valid until expiry (60 minutes)
+- Login limits are kept in memory per server process; tokens stay valid until expiry (60 minutes), even after logout
 - No schema migration tool
 - Resume analysis needs a text-based PDF and is keyword/pattern based
 - Deleting a user directly in MySQL leaves their resume file on disk (the app has no account deletion)

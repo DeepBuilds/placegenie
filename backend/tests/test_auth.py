@@ -202,3 +202,56 @@ def test_role_change_applies_immediately(client, student_token, db_session):
     db_session.query(User).one().role = Role.COORDINATOR
     db_session.commit()
     assert client.get(f"{API}/students/me", headers=auth_header(student_token)).status_code == 403
+
+
+# ---------------------------------------------------------------- limiting password guessing
+def _bad_login(client, email, n=1):
+    return [client.post(f"{API}/auth/login", json={"email": email, "password": "Wrong123x"}).status_code for _ in range(n)]
+
+
+def test_repeated_failures_lock_that_email_for_a_while(client):
+    client.post(f"{API}/auth/register", json=STUDENT)
+    assert _bad_login(client, STUDENT["email"], 5) == [401] * 5
+    res = client.post(f"{API}/auth/login", json={"email": STUDENT["email"], "password": STUDENT["password"]})
+    assert res.status_code == 429  # even the right password, so guessing cannot continue
+    assert "Too many failed login attempts" in res.json()["detail"] and int(res.headers["retry-after"]) > 0
+
+
+def test_the_lock_is_per_email(client, coordinator):
+    client.post(f"{API}/auth/register", json=STUDENT)
+    _bad_login(client, STUDENT["email"], 5)
+    res = client.post(f"{API}/auth/login", json={"email": COORDINATOR["email"], "password": COORDINATOR["password"]})
+    assert res.status_code == 200
+
+
+def test_a_successful_login_clears_earlier_failures(client):
+    client.post(f"{API}/auth/register", json=STUDENT)
+    _bad_login(client, STUDENT["email"], 4)
+    assert client.post(f"{API}/auth/login", json={"email": STUDENT["email"], "password": STUDENT["password"]}).status_code == 200
+    assert _bad_login(client, STUDENT["email"], 4) == [401] * 4  # counting starts again
+
+
+def test_one_address_cannot_try_many_accounts(client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "login_max_failures_per_ip", 6)
+    for i in range(6):
+        _bad_login(client, f"user{i}@example.com")
+    assert _bad_login(client, "someone-else@example.com") == [429]
+
+
+def test_the_lock_ends_after_the_window(client, monkeypatch):
+    from app.core import login_limiter as module
+
+    client.post(f"{API}/auth/register", json=STUDENT)
+    clock = [1000.0]
+    monkeypatch.setattr(module.time, "monotonic", lambda: clock[0])
+    _bad_login(client, STUDENT["email"], 5)
+    assert _bad_login(client, STUDENT["email"]) == [429]
+    clock[0] += 15 * 60 + 1
+    assert client.post(f"{API}/auth/login", json={"email": STUDENT["email"], "password": STUDENT["password"]}).status_code == 200
+
+
+def test_unknown_emails_are_counted_the_same_way(client):
+    """Otherwise the difference would reveal which emails are registered."""
+    assert _bad_login(client, "nobody@example.com", 6) == [401] * 5 + [429]

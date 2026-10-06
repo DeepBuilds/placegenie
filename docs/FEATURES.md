@@ -8,6 +8,7 @@ Every rule below is covered by the automated tests ([TESTING.md](TESTING.md)).
 - Passwords are hashed with bcrypt; sessions are JWT bearer tokens signed with `JWT_SECRET_KEY` (32+ characters, required).
 - The token is kept in `localStorage`; logout discards it. Expired or invalid tokens send the user back to the login page.
 - Public registration only creates students. Coordinators are created on the server with `python -m app.database.create_coordinator` (hidden password prompt).
+- Password guessing is slowed: after 5 failed logins for an email (or 30 from one address) within 15 minutes, further attempts are refused with 429 for the rest of that window, even with the right password. Unknown emails are counted the same way, so the answer never reveals which emails exist.
 - The role is read from the database on every request, so a role change or a disabled account takes effect immediately.
 - Pages check the role too (a student opening `/coordinator/...` is sent to `/student`), but the backend is what enforces it.
 

@@ -79,3 +79,13 @@ def isolated_upload_dir(tmp_path, monkeypatch):
     from app.core.config import get_settings
 
     monkeypatch.setattr(get_settings(), "upload_dir", str(tmp_path / "uploads"))
+
+
+@pytest.fixture(autouse=True)
+def fresh_login_limiter():
+    """Failed logins in one test must not lock accounts in the next."""
+    from app.core.login_limiter import login_limiter
+
+    login_limiter.reset()
+    yield
+    login_limiter.reset()

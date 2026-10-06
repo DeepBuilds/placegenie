@@ -58,7 +58,7 @@ Full rules for every module: [docs/FEATURES.md](docs/FEATURES.md).
 | Database | MySQL 8 (PyMySQL driver) |
 | AI / text | scikit-learn (TF-IDF similarity), pdfplumber (PDF text); optional Anthropic or OpenAI-compatible LLM for the chatbot |
 | Security | bcrypt password hashing, JWT bearer tokens, role-based access |
-| Testing | pytest (1,040 tests), Vitest + Testing Library (233 tests), oxlint |
+| Testing | pytest (1,046 tests), Vitest + Testing Library (234 tests), oxlint |
 
 ## Architecture
 ```
@@ -221,9 +221,9 @@ database); students cannot see or change each other's data or the official statu
 
 ## Testing
 ```bash
-cd backend  && python -m pytest       # 1,040 tests (~15 min): every module, authorization of all 72 routes,
+cd backend  && python -m pytest       # 1,046 tests (~15 min): every module, authorization of all 72 routes,
                                       # malformed input on every route, security, query efficiency
-cd frontend && npm test               # 233 tests
+cd frontend && npm test               # 234 tests
 cd frontend && npm run lint && npm run build
 ```
 Backend tests use a temporary SQLite database and never touch MySQL or your `.env` secrets.
@@ -268,7 +268,7 @@ Add images to `docs/screenshots/` and they will appear here.
 | [docs/CHECKLIST.md](docs/CHECKLIST.md) | final project checklist |
 
 ## Known limitations
-- Login attempts are not rate limited (the chatbot is); tokens stay valid until they expire (60 minutes by default).
+- Failed-login limits are kept in memory per server process; tokens stay valid until they expire (60 minutes by default), even after logout.
 - No database migration tool: new tables are created automatically, changed tables need manual changes.
 - Resume analysis needs a text-based PDF (no OCR for scanned images) and uses keyword/pattern rules, so unusual layouts can be read imperfectly.
 - Times are stored without a time zone (one college, one time zone).
