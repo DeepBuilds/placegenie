@@ -1,0 +1,67 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [5 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Length 1368 >>
+stream
+BT
+/F1 11 Tf
+14 TL
+50 780 Td
+(Ananya Kulkarni) Tj T*
+(ananya.demo@example.com | +91 98765 43210 | Pune) Tj T*
+(linkedin.com/in/ananya-demo | github.com/ananya-demo) Tj T*
+() Tj T*
+(CAREER OBJECTIVE) Tj T*
+(Computer engineering student looking for a data analyst role where I can turn data into decisions.) Tj T*
+() Tj T*
+(EDUCATION) Tj T*
+(B.E. Computer Engineering, Demo Institute of Technology, Pune - 2027) Tj T*
+(CGPA: 8.1 / 10) Tj T*
+(HSC \(Science\), 2023 - 86%) Tj T*
+() Tj T*
+(SKILLS) Tj T*
+(Python, SQL, Excel, Statistics, Pandas, Power BI, Git, Communication) Tj T*
+() Tj T*
+(PROJECTS) Tj T*
+(Sales Insights Dashboard - Python, SQL, Power BI) Tj T*
+(- Cleaned 50,000 rows of retail sales data with Pandas and loaded them into MySQL.) Tj T*
+(- Built a Power BI dashboard showing monthly revenue, top products and regional trends.) Tj T*
+(Placement Statistics Analyser - Python, Pandas, Excel) Tj T*
+(- Analysed five years of campus placement data and presented branch-wise trends.) Tj T*
+() Tj T*
+(EXPERIENCE) Tj T*
+(Data Analytics Intern, Demo Retail Pvt Ltd, Pune - June 2026 to August 2026) Tj T*
+(- Automated weekly sales reports with Python and SQL, saving about four hours a week.) Tj T*
+() Tj T*
+(CERTIFICATIONS) Tj T*
+(Google Data Analytics Certificate \(demo\)) Tj T*
+() Tj T*
+(ACHIEVEMENTS) Tj T*
+(Second place, college data hackathon 2025) Tj T*
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R /Resources << /Font << /F1 3 0 R >> >> >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000185 00000 n 
+0000001605 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1731
+%%EOF

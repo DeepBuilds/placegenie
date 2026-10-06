@@ -1,4 +1,4 @@
-# Phase 1 dependencies (more are added in later phases, with justification)
+# Backend dependencies (install with: pip install -r requirements.txt). pytest and httpx are for the tests.
 fastapi>=0.115
 uvicorn[standard]>=0.30
 sqlalchemy>=2.0

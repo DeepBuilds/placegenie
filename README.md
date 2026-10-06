@@ -1,338 +1,274 @@
 # PlaceGenie AI – Intelligent Placement Assistant
 
-Web-based placement assistant for college students and placement coordinators.
-It is a guidance tool; it does not replace recruitment decisions by companies or placement officers.
+A web application that helps college students prepare for campus placements and helps the placement cell
+(coordinators) run them. Semester III project: React + FastAPI + MySQL, with explainable rule-based "AI".
 
-> **Current status:** Phase 1 (setup) and Phase 2 (database models) are done. Phases 1-12 are done: setup, database, authentication and role-based access, the student profile, companies/jobs, eligibility checking, job recommendations, resume analysis, skill-gap analysis, application and interview tracking, the placement chatbot, and the student dashboard.
+> PlaceGenie AI gives **guidance**. It never decides who gets hired: companies and placement officers do.
 
-## Tech stack
+## Contents
+[Objective](#project-objective) · [Features](#features) · [Technology](#technology-stack) · [Architecture](#architecture) ·
+[Folders](#folder-structure) · [Requirements](#requirements) · [Installation](#installation) · [Demo accounts](#demo-accounts) ·
+[How to demonstrate](#how-to-demonstrate-placegenie-ai) · [Testing](#testing) · [API](#api-documentation) ·
+[Screenshots](#screenshots) · [More documentation](#more-documentation)
+
+## Project objective
+Students usually do not know which openings they are eligible for, why they are rejected by a filter, which skills
+they lack, or how far along they are; coordinators track all of this in spreadsheets. PlaceGenie AI puts both sides on
+one platform and explains every result:
+
+- a student sees exactly which jobs they qualify for and **why** (rule by rule), which jobs suit them best, what to
+  learn next, what their resume is missing, and where every application stands;
+- a coordinator manages companies, jobs and applications, and sees live placement statistics and reports.
+
+All "intelligent" features are transparent rules with written weights, plus TF-IDF text similarity. There is no
+trained black-box model, so every number on screen can be explained.
+
+## Features
+
+**Student**
+- Registration and login; profile with academics, skills (with level), projects, experience, certifications and
+  preferences, plus a completeness score
+- Job and company browsing with search, filters and pagination
+- **Eligibility check** per job: CGPA, branch, backlogs, required skills, certifications, experience and deadline,
+  each with a pass/fail reason
+- **Recommendations**: jobs ranked by a 0-100 score (skills 45%, academics 20%, preferred role 15%, interests 10%,
+  resume 10%), with reasons and concerns
+- **Resume analysis** of a text PDF: sections, skills, completeness score, suggestions, job relevance; detected skills
+  can be added to the profile
+- **Skill gap** for any job: match %, missing skills ranked high/medium/low with reasons
+- **Applications and interviews**: apply, withdraw, follow the official status, keep an interview diary
+- **Placement assistant (chatbot)**: answers about the student's own data straight from the database; general
+  questions from a built-in guide, or from an LLM if one is configured
+- **Dashboard** and a printable **report** (CSV export)
+
+**Coordinator**
+- Dashboard: students, companies, jobs, applications, shortlisted/selected/rejected, placement rate, items needing attention
+- Student search and filters; each student's full placement profile
+- Companies and jobs: add, edit, delete (protected when applications exist); skills with weights, allowed branches, certifications
+- Applications: filter by company, job or status; set the official status
+- Cohort progress, analytics, and a placement report with charts; CSV exports (students, applications, placements, companies, jobs, skills)
+
+Full rules for every module: [docs/FEATURES.md](docs/FEATURES.md).
+
+## Technology stack
 | Layer | Technology |
 |---|---|
-| Frontend | React 19, Vite, React Router, Axios, Tailwind CSS |
-| Backend | Python 3.11+, FastAPI, SQLAlchemy 2, Pydantic |
-| Database | MySQL 8 (via PyMySQL) |
-| AI/ML | scikit-learn (TF-IDF similarity), pdfplumber (PDF text); pandas/NumPy in later phases |
+| Frontend | React 19, Vite 8, React Router 7, Axios, Tailwind CSS 4 |
+| Backend | Python 3.11+ (tested on 3.13), FastAPI, Pydantic 2, SQLAlchemy 2, Uvicorn |
+| Database | MySQL 8 (PyMySQL driver) |
+| AI / text | scikit-learn (TF-IDF similarity), pdfplumber (PDF text); optional Anthropic or OpenAI-compatible LLM for the chatbot |
+| Security | bcrypt password hashing, JWT bearer tokens, role-based access |
+| Testing | pytest (1,040 tests), Vitest + Testing Library (233 tests), oxlint |
+
+## Architecture
+```
+React SPA  --HTTPS/JSON + JWT-->  FastAPI  /api/v1
+                                     routers -> services -> repositories -> MySQL 8
+                                                   \-> ai/ (eligibility, recommender, skill gap,
+                                                            resume pipeline, chatbot intents)
+                                     uploads/ (resume PDFs)      optional LLM API (chatbot only)
+```
+Routers only handle HTTP and roles, services hold the use cases, `ai/` holds pure decision rules, repositories hold
+the SQL. Judgements (eligibility, scores, dashboards, reports) are computed from the current data on every request and
+never stored. Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Folder structure
 ```
 placegenie/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py            FastAPI app, CORS, router registration
-│   │   ├── core/              settings (config.py), later security
-│   │   ├── database/          engine + session
-│   │   ├── routers/           HTTP endpoints (health.py for now)
-│   │   ├── models/ schemas/ services/ repositories/ ai/ utils/   (filled in later phases)
-│   ├── tests/
-│   ├── uploads/               resume uploads (git-ignored)
+│   │   ├── main.py          app, CORS, security headers, error handlers, routers
+│   │   ├── core/            settings (config.py), password/JWT (security.py), role checks (deps.py)
+│   │   ├── routers/         HTTP endpoints, one file per area
+│   │   ├── services/        use cases (applications, dashboards, reports, chatbot...)
+│   │   ├── ai/              rules: eligibility, recommender, skill_gap, resume/, chatbot/
+│   │   ├── repositories/    database queries
+│   │   ├── models/          SQLAlchemy tables
+│   │   ├── schemas/         request/response models (Pydantic)
+│   │   └── database/        engine, seed scripts, create_coordinator
+│   ├── tests/               pytest suite
+│   ├── uploads/             resume files (git-ignored)
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/
-│   ├── src/ (api, components, context, hooks, layouts, pages, routes, utils)
-│   ├── vite.config.js         dev proxy: /api -> backend
+│   ├── src/
+│   │   ├── api/             one module per backend area (client.js adds the token)
+│   │   ├── pages/student/   pages/coordinator/
+│   │   ├── components/      navbar, widgets, charts, forms
+│   │   ├── context/ hooks/ routes/ utils/
+│   │   └── tests/           Vitest suite
+│   ├── vite.config.js       dev proxy /api -> backend
 │   └── .env.example
-├── database/setup.sql         creates the MySQL database + user
+├── database/setup.sql       creates the MySQL database and user
+├── docs/                    detailed documentation, demo resume, screenshots
+├── DEVELOPMENT.md           how to work on the code
 └── README.md
 ```
 
-## Prerequisites
-Python 3.11+, Node.js 18+, MySQL 8 running locally, Git.
+## Requirements
+- **Python** 3.11 or newer
+- **Node.js** 20.19+ or 22.12+ (required by Vite 8) with npm
+- **MySQL** 8.0 server and an admin login (for example `root`); MySQL Workbench is optional
+- **Git**
 
-## 1. Database setup
-1. Edit the password in `database/setup.sql`, then run (as MySQL admin):
-   ```bash
-   mysql -u root -p < database/setup.sql
-   ```
-   (Or paste the statements into MySQL Workbench.)
-2. Put the same password in `backend/.env` as `DB_PASSWORD`.
+## Installation
 
-## 2. Backend
+Commands are for Windows (Command Prompt or PowerShell); macOS/Linux equivalents are noted.
+
+### 1. Get the code
+```bash
+git clone <repository-url> placegenie
+cd placegenie
+```
+
+### 2. Database setup
+```bash
+copy database\setup.sql database\setup.local.sql      # macOS/Linux: cp
+```
+Open `database/setup.local.sql`, replace every `change_me` with a password of your choice, then run it as the MySQL admin:
+```bash
+mysql -u root -p < database/setup.local.sql
+```
+This creates the `placegenie` database and a `placegenie` user limited to it. `setup.local.sql` is git-ignored, so
+your password stays private. Tables are created automatically when the backend starts.
+Full guide, troubleshooting and backups: [docs/DATABASE.md](docs/DATABASE.md).
+
+### 3. Environment variables
+```bash
+copy backend\.env.example backend\.env                # macOS/Linux: cp
+copy frontend\.env.example frontend\.env
+```
+In `backend/.env` set at least:
+
+| Variable | Value |
+|---|---|
+| `DB_PASSWORD` | the password from step 2 |
+| `JWT_SECRET_KEY` | a random value of 32+ characters: `python -c "import secrets; print(secrets.token_urlsafe(48))"` |
+
+Everything else has working defaults (MySQL on `127.0.0.1:3306`, frontend on port 5173, chatbot without an external
+AI). The frontend `.env` needs no changes. All variables: [docs/CONFIGURATION.md](docs/CONFIGURATION.md).
+`.env` files are git-ignored; never commit them.
+
+### 4. Backend startup
 ```bash
 cd backend
 python -m venv .venv
-.venv\Scripts\activate          # Windows (macOS/Linux: source .venv/bin/activate)
+.venv\Scripts\activate                                 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-copy .env.example .env          # macOS/Linux: cp .env.example .env  -> then edit values
+python -m app.database.seed_demo                       # optional: 10 fictional companies, 19 jobs
+python -m app.database.create_coordinator              # first coordinator (asks for name, email, hidden password)
 uvicorn app.main:app --reload --port 8000
 ```
-- Health check: http://127.0.0.1:8000/api/v1/health
-- Swagger docs: http://127.0.0.1:8000/docs
+Check http://127.0.0.1:8000/api/v1/health – it must show `"status": "ok"` and `"database": {"connected": true}`.
+API explorer: http://127.0.0.1:8000/docs
 
-## 3. Frontend
+### 5. Frontend startup
+In a second terminal:
 ```bash
 cd frontend
 npm install
-copy .env.example .env          # macOS/Linux: cp
 npm run dev
 ```
-Open http://localhost:5173 — the home page shows backend and MySQL status.
+Open **http://localhost:5173**. Students register on the site; coordinators log in with the account from step 4.
 
-## Environment variables
-Backend (`backend/.env`, see `.env.example`): `DB_HOST DB_PORT DB_USER DB_PASSWORD DB_NAME`, `JWT_SECRET_KEY` (used from Phase 3), `CORS_ORIGINS`, `LLM_PROVIDER/LLM_API_KEY` (optional, Phase 11).
-Frontend (`frontend/.env`): `VITE_API_BASE_URL` (default `/api/v1`), `VITE_PROXY_TARGET` (default `http://127.0.0.1:8000`).
-`.env` files are git-ignored; never commit secrets.
+Production build: `npm run build` (output in `frontend/dist/`). Server deployment with HTTPS and nginx:
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
-## How frontend and backend communicate
-In development Vite proxies `/api/*` to the backend, so the browser talks to one origin. All calls go through `frontend/src/api/client.js`. CORS is also configured in the backend (`CORS_ORIGINS`) for direct calls or deployment.
+## Demo accounts
+No accounts or passwords are stored in the repository. For a demonstration, create these **local demo** accounts
+(use them only on your own machine and never on a shared server):
 
-## Authentication
-- Students self-register at `/register`; everyone logs in at `/login` and is sent to `/student` or `/coordinator` by role.
-- Passwords are hashed with bcrypt; sessions are JWT bearer tokens (`JWT_SECRET_KEY` in `backend/.env` is required; generate one with `python -c "import secrets; print(secrets.token_urlsafe(48))"`).
-- The token is kept in `localStorage`; logout discards it. Expired or invalid tokens send the user back to the login page.
-- Public registration only creates students. Create a coordinator (hidden password prompt) with:
-  ```bash
-  cd backend && .venv\Scripts\python -m app.database.create_coordinator
-  ```
+| Role | Email | Password | How it is created |
+|---|---|---|---|
+| Coordinator | `coordinator@placegenie.demo` | `PlaceGenie@2026` | `python -m app.database.create_coordinator` (name: *Demo Coordinator*) |
+| Student | `student@placegenie.demo` | `PlaceGenie@2026` | registered in the app during the demo (name: *Ananya Kulkarni*) |
 
-## Student profile (Phase 4)
-Students manage their profile at `/student/profile`: personal and academic details, skills (with level), certifications, projects, experience, interests and placement preferences, plus a completeness score. The profile row is created at registration; the first save fills it in. Lookup lists (branches, skills, job roles) are seeded automatically at backend startup.
+Passwords must have at least 8 characters with letters and numbers. A fictional sample resume for the demo student is
+in [docs/demo/sample-resume.pdf](docs/demo/sample-resume.pdf). Load the demo companies and jobs first
+(`python -m app.database.seed_demo`).
 
-| Endpoint (student only) | Purpose |
-|---|---|
-| `GET /students/me` | full profile + completeness |
-| `PUT /students/me` | save personal/academic details |
-| `PUT /students/me/skills` | replace skill list |
-| `PUT /students/me/preferences` | preferred roles/companies |
-| `POST /students/me/{certifications,projects,experiences}` | add item |
-| `PUT` / `DELETE /students/me/{certifications,projects,experiences}/{id}` | edit / remove item |
-| `GET /branches`, `/skills`, `/job-roles` | lookup lists (any logged-in user) |
+## How to demonstrate PlaceGenie AI
 
-## Companies and jobs (Phase 5)
-Students browse `/student/jobs` (search + filters + pagination), `/student/jobs/:id` (full requirements) and `/student/companies`. Students only ever see **open** jobs; coordinators can see and manage everything. Eligibility is stored on the job (min CGPA, max backlogs, experience, allowed branches, required certifications, skills with required/preferred weight); eligibility is checked by the engine below.
+A complete walk-through, about 15 minutes. It uses the demo accounts and demo data above; the expected results were
+checked against a real MySQL database. Keep two browser windows open (one normal, one private) so the coordinator and
+the student can be logged in at the same time.
 
-Load the fictional demo data (10 companies, 19 jobs, varied requirements) once:
+**Preparation:** database set up, backend and frontend running, `seed_demo` loaded, demo coordinator created.
+
+| # | Step | Who / where | What to do | What you should see |
+|---|---|---|---|---|
+| 1 | **Coordinator creates jobs** | Coordinator → *Jobs* → **Add job** | Company *Aurora Analytics*, title *Data Engineer Intern*, type *Internship*, location *Pune*, minimum CGPA *7.5*, maximum backlogs *0*, a deadline in the future; skills **Python, SQL, Docker** (all *Required*, weight 3); allowed branches *Computer Science and Engineering* and *Information Technology* | "Job added."; the job appears in the list (20 jobs). Also show *Companies* (10 fictional companies) |
+| 2 | **Student registers** | Private window → **Register** | Name *Ananya Kulkarni*, email `student@placegenie.demo`, password `PlaceGenie@2026` | Logged in and taken to the student dashboard, which says what to do first (complete the profile) |
+| 3 | **Student completes profile** | *My profile* | Phone, college *Demo Institute of Technology*, branch *Computer Science and Engineering*, year 3, semester 5, CGPA *8.1*, backlogs 0, interests *data analysis, dashboards*; skills **Python, SQL, Excel, Statistics** (Intermediate); preferred role *Data Analyst*; one project *Sales Insights Dashboard* | The completeness bar reaches **100%** |
+| 4 | **Student uploads resume** | *Resume* | Upload `docs/demo/sample-resume.pdf`. Optionally show that a `.txt` or Word file is refused | Upload accepted; the analysis opens |
+| 5 | **Resume analysis** | *Resume analysis* | Walk through the page | Completeness score **97/100**, all sections found, 9 skills detected (Python, SQL, Excel, Statistics, Pandas, **Power BI**, Git, MySQL, Communication) with where each was found, suggestions, best-matching jobs. Click **Add 5 detected skills to my profile** (the number is the skills not yet in the profile) – this matters in step 8 |
+| 6 | **Eligibility check** | *Jobs* → *Data Analyst* → **Check Eligibility**; then *Data Engineer Intern* | | *Data Analyst*: **Eligible**, every rule passed (CGPA 8.1 ≥ 7.0, branch allowed, backlogs within limit, required skills held). *Data Engineer Intern*: **Not eligible – missing required skill: Docker**, while CGPA and branch pass. Each rule shows required vs your value |
+| 7 | **Recommendations** | *Recommended* | Open the breakdown of the top job | *Data Analyst* ranked first with a high score (≈ 90) and the reasons; *Data Engineer Intern* is shown lower, flagged not eligible (scores are multiplied by 0.5 when not eligible). Tick **Only jobs I'm eligible for** |
+| 8 | **Skill gap** | *Skill gap* → choose *Data Engineer Intern*, then *Data Analyst* | | *Data Engineer Intern*: **67%** match, missing **Docker – high priority** ("Required for this job", "Essential: weight 3 out of 5"). *Data Analyst*: 100% after step 5 added Power BI (it was 88% with Power BI missing before) |
+| 9 | **Application** | *Data Analyst* job page → **Apply** | Confirm; then try to apply again | Status **Applied**; the second attempt is refused ("You have already applied to this job") |
+| 10 | **Coordinator updates status** | Coordinator → *Applications* | Filter by company *Aurora Analytics*; change Ananya's status to **Shortlisted** → Update | The student's *Applications* page now shows *Shortlisted* on the status tracker |
+| 11 | **Interview tracking** | Student → application → **Add interview** | *Technical interview*, a date next week, notes *SQL joins and a dashboard case study* | Appears under *Interviews → Upcoming*; after the date, record the result (Passed / Not cleared) |
+| 12 | **Dashboard** | Student → *Dashboard* | | Progress **5 of 6 steps** (profile, resume, applied, shortlisted, interview recorded; only "offer" left), top recommendations, upcoming interview, skill gaps. Ask the **Assistant**: *"Am I eligible for Data Engineer Intern?"* – it answers from the database (not eligible, Docker missing) |
+| 13 | **Coordinator monitoring** | Coordinator → *Dashboard*, *Students*, *Progress* | Open Ananya from *Students* | Totals (1 student, 20 jobs, 1 application, 1 shortlisted); placement rate shown as "needs at least 5 students" instead of a misleading percentage; Ananya's full placement profile, the same progress as the student sees |
+| 14 | **Reports** | Coordinator → *Report*; student → *Report* | Download **Applications CSV**; **Print / save as PDF** | Placement report with charts (status distribution, company-wise and job-wise applications, skill gaps); the CSV opens in Excel. The student's report shows *In the selection process* |
+
+Optional finish: set the status to **Selected** and show that the student's outcome, the dashboard and the coordinator's
+"Selected students" table all update immediately (nothing is cached).
+
+Points worth explaining in a viva: every eligibility verdict lists the rule that failed; the recommendation score is a
+weighted sum shown in the breakdown; the chatbot never invents numbers (data questions are answered from the
+database); students cannot see or change each other's data or the official status.
+
+## Testing
 ```bash
-cd backend && .venv\Scripts\python -m app.database.seed_demo
-```
-It is re-runnable and never overwrites edits. It is not run at startup, so companies a coordinator deletes stay deleted.
-
-| Endpoint | Who | Purpose |
-|---|---|---|
-| `GET /companies`, `/companies/{id}`, `/companies/{id}/jobs` | any logged-in user | list/search companies, detail, a company's jobs |
-| `GET /jobs`, `/jobs/{id}` | any logged-in user | search + filter (`q, company_id, job_type, role_id, skill_id, branch_id, location, max_min_cgpa, hide_expired, sort, limit, offset`) |
-| `POST /companies`, `PUT/DELETE /companies/{id}` | coordinator | manage companies |
-| `POST /jobs`, `PUT/DELETE /jobs/{id}` | coordinator | manage jobs (PUT replaces the job incl. skills/branches/certifications) |
-
-Companies or jobs that already have student applications cannot be deleted (409): close the job instead. Deleting a company deletes its jobs. The coordinator management screens are part of the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` as a coordinator.
-
-## Eligibility checking (Phase 6)
-`POST /api/v1/jobs/{job_id}/eligibility` (student only) compares the logged-in student's profile with a job and returns `result` (`ELIGIBLE` / `NOT_ELIGIBLE` / `INCOMPLETE_PROFILE`), `eligible`, every criterion (required value, your value, message, `passed`/`failed`/`not_evaluated`), `reasons`, `failed_requirements`, `missing_skills`, `missing_preferred_skills`, `missing_certifications` and `incomplete_fields`. The button is on the job details page.
-
-It is **purely rule-based** (`backend/app/ai/eligibility.py`: plain functions, no database, no ML), so every verdict can be explained:
-1. CGPA at least the job's minimum (0 = no minimum)
-2. Branch in the job's allowed list (empty list = all branches)
-3. Backlogs at most the job's limit (empty = no limit)
-4. **All required** skills held (preferred skills are reported but never block)
-5. All required certifications held (case/spacing-insensitive)
-6. Experience months at least the minimum (from your experience entries, overlaps counted once, ongoing roles counted to today)
-7. Job open and deadline not passed
-
-If the profile lacks data for a rule (e.g. no CGPA or branch), that rule is `not_evaluated` rather than silently passing; a genuine failure always makes the result `NOT_ELIGIBLE`. Results are computed from the current profile on every request and are not stored. They are guidance only: the company and placement officers decide.
-
-## Job recommendations (Phase 7)
-`GET /api/v1/recommendations` (student only; page `/student/recommendations`) ranks open, not-yet-expired jobs for the logged-in student with a transparent 0-100 score. Query: `role_id`, `location`, `eligible_only`, `sort` (`score_desc` default, `score_asc`, `deadline`, `title`), `limit` (default 10, max 50), `offset`. Each item has the job, `match_score`, `eligibility`, `matched_skills`, `missing_skills`, `missing_preferred_skills`, `reasons` (why recommended), `concerns` (what holds it back) and a per-factor `breakdown`; the page also returns eligibility `counts` and `profile_hints`. Nothing is stored: scores are computed from the current profile on every request.
-
-**Algorithm** (`backend/app/ai/recommender.py`, explainable, no trained model):
-
-    fit   = weighted average of the factors the student has data for        (0..1)
-    score = fit x eligibility multiplier x 100
-
-| Factor | Weight | How it is computed |
-|---|---|---|
-| Skill match | 45% | share of the job's skills the student holds (each required skill counts 1, each preferred skill 0.5) |
-| Academic fit | 20% | 0 if the CGPA rule is failed, else 0.7 + 0.3 x headroom above the minimum |
-| Preferred role | 15% | 1 = a preferred role, 0.5 = same role family, 0 = other |
-| Interest match | 10% | TF-IDF cosine similarity (scikit-learn): interests + projects + experience + certifications vs the job text |
-| Resume relevance | 10% | same TF-IDF similarity using the resume text (used only once a resume exists, Phase 8) |
-
-Factors with no data (no skills added, no CGPA, no preferred roles, ...) are left out and the remaining weights are rescaled to 100%; missing data is never scored as zero. Eligibility (Phase 6 engine) then multiplies the result: eligible x1.0, incomplete profile x0.9, not eligible x0.5, so "stretch" jobs stay visible but rank below jobs the student can apply to. TF-IDF similarity of 0.25 or more counts as a full match (raw cosine between short texts is small). The engine sits behind the `Recommender` interface (`default_recommender()`), so an ML ranker can replace or augment it without changing the API or UI.
-
-## Resume analysis (Phase 8)
-Students upload a **text-based PDF** at `/student/resume` and see the analysis at `/student/resume/analysis`. Scanned images are rejected with a clear message (no OCR). One resume per student: a new upload replaces the old one (and deletes its file).
-
-| Endpoint (student only) | Purpose |
-|---|---|
-| `POST /resumes` (multipart `file`) | upload, validate, analyse, store -> full analysis |
-| `GET /resumes/me` | current resume metadata, or `null` |
-| `GET /resumes/{id}/analysis` | analysis + live comparison with profile and open jobs |
-| `POST /resumes/{id}/analyze` | re-run the analysis on the stored text |
-| `POST /resumes/{id}/sync-skills` | add detected skills to the student's profile (marked `source=resume`) |
-| `GET /resumes/{id}/file` / `DELETE /resumes/{id}` | download / delete your own file |
-
-**Pipeline** (`backend/app/ai/resume/`, one small module per stage): `extract.py` (pdfplumber text) -> `clean.py` (unicode, bullets, spacing) -> `sections.py` (heading detection) -> `parse.py` (name, contact, education, projects, experience, certifications via patterns) -> `skills.py` (whole-word dictionary match against the platform skill list + aliases; ambiguous names like C/R/Go/Excel only count inside a Skills list) -> `analyze.py` (completeness score out of 100, keywords by TF-IDF, rule-based suggestions, job relevance, potentially missing skills, profile comparison).
-It is heuristic keyword/pattern analysis, not human-level understanding; the UI says so. Unusual layouts (multi-column, tables, graphics) can be read imperfectly.
-
-**Stored:** file metadata, the cleaned text, the analysis (sections, contact flags, extracted entries, keywords, suggestions) and detected skills with where each was found. **Computed on every request (never stored):** job relevance (50% TF-IDF similarity + 50% share of the job's skills the resume shows), potentially missing skills, profile comparison and the profile-based suggestions.
-
-**Security:** extension, content type and the `%PDF-` signature must all agree; size limit `RESUME_MAX_MB` (default 5, also refused early from `Content-Length`); page limit `RESUME_MAX_PAGES` (default 10); the stored name is a server-generated uuid (the client filename is only displayed, sanitised); files live in `backend/uploads/` (git-ignored); every query is scoped to the logged-in student, so another student's resume is simply "not found" (404).
-
-If you upgraded from Phase 7 with an existing database, the two empty tables `resume_analyses` and `resume_detected_skills` gained columns; drop them and restart the backend so they are recreated (there is no migration tool yet).
-
-## Skill-gap analysis (Phase 9)
-`GET /api/v1/jobs/{job_id}/skill-gap` (student only) compares the student's skills with one job. Shown on every job's details page and on its own page, `/student/skill-gap` (pick any open job; also linked from each recommendation). Read-only and computed from the current profile on every request.
-
-Response: `match_percentage`, `required_match_percentage`, counts, `matched_skills` (with the student's own level), `missing_skills` (each with `priority` and `reasons`), `priority` (the top 5 to work on, ranked), `summary`, `notes`, `open_jobs_compared`. A job with no skills returns `match_percentage: null` and nothing to compare; a student with no skills gets 0% plus a note to add skills.
-
-**Rules** (`backend/app/ai/skill_gap.py`, pure functions, no ML):
-- **Match %** is the same formula as the recommender's skill score: each required skill counts 1, each preferred skill 0.5, so the two screens always agree. The job's own 1-5 skill weights are not part of the percentage.
-- **Priority of a missing skill:** *high* = a required skill that is **essential** (the job gives it weight 3 or more out of 5) or that is **frequently requested** (asked for by at least 30% of currently open jobs); *medium* = any other required skill, or a preferred skill that is frequently requested; *low* = any other preferred skill. Within a level, skills are ordered by the job's weight, then how many open jobs ask for them, then name.
-- Every priority carries plain-language reasons ("Required for this job", "Essential: weight 3 out of 5", "Asked for in 6 of 18 open jobs (33%)"). There are no learning times, courses or outcome claims.
-
-## Applications and interviews (Phase 10)
-Students apply from a job's page, follow their applications at `/student/applications` (details at `/student/applications/:id`) and keep a diary of interviews at `/student/interviews` (details at `/student/interviews/:id`).
-
-**Rules**
-- **One application per student per job** (unique in the database too). A second attempt returns 409. After *withdrawing*, applying again re-opens the same record.
-- Applying needs an open job whose deadline has not passed. Nobody is blocked for being ineligible (the company and placement cell decide): the apply button first shows what the student does not meet and asks them to confirm. The application page shows the *current* eligibility, computed live.
-- **Statuses:** `applied -> shortlisted -> online_assessment -> technical_interview -> hr_interview -> selected`, or `rejected`, or `withdrawn`.
-- **Only coordinators set the official status** (so placement statistics cannot be edited by the students they describe). Students can withdraw their own application, except after `selected` or `rejected`.
-- **Interviews** (online assessment, technical, HR, other) have a date/time, notes, and a result (pending / passed / not cleared). Students manage interviews on their own applications; coordinators can add or edit them on any. Times are stored exactly as entered (one college, one time zone). Upcoming = now or later; past = earlier; a past interview with no result is flagged "add the result".
-
-| Endpoint | Who | Purpose |
-|---|---|---|
-| `POST /applications` `{job_id}` | student | apply (201; 409 duplicate / deadline; 404 unknown or closed job) |
-| `GET /applications/me?status=&job_id=` | student | my applications + per-status counts |
-| `POST /applications/{id}/withdraw` | student | withdraw |
-| `GET /applications?status=&job_id=&company_id=&q=&limit=&offset=` | coordinator | all applications |
-| `PATCH /applications/{id}/status` `{status}` | coordinator | set the official status |
-| `GET /applications/{id}` | owner or coordinator | detail incl. interviews and live eligibility |
-| `POST /applications/{id}/interviews` | owner or coordinator | add an interview |
-| `GET /interviews/me?when=upcoming\|past\|unscheduled\|all` | student | my interview diary + counts |
-| `GET /interviews?when=` | coordinator | everyone's interviews |
-| `GET` / `PATCH` / `DELETE /interviews/{id}` | owner or coordinator | view / change (only the fields sent) / delete |
-
-Another student's application or interview is always "not found" (404). The coordinator screens for managing statuses belong to the later coordinator dashboard (Phase 13); until then use the Swagger UI at `/docs` signed in as a coordinator.
-
-## Placement chatbot (Phase 11)
-Students chat with the assistant at `/student/chat`: several saved conversations, a "New chat" button, and delete-one / clear-all-history.
-
-**How a message is answered** (`backend/app/services/chatbot_engine.py`; the routes only call a service):
-1. **Hiring decisions and schedules** ("will Google select me?", "when are the results?") get an honest "I do not have real-time information", never a guess.
-2. **Questions about the student's own data** (eligibility, skill gap, recommendations, applications, interviews, resume, profile) are answered **directly from the database** with the same engines as the rest of the app. A language model is never used for these, so the numbers cannot be invented.
-3. **Greetings and help** get short fixed replies.
-4. **General placement questions** (interview prep, resumes, aptitude, job roles...) go to an LLM *if one is configured*, given reference notes from the built-in guide; otherwise, or if the LLM fails, the **built-in placement guide** answers. The guide is about 30 curated topics matched with TF-IDF similarity (`backend/app/ai/chatbot/knowledge.py`), not hundreds of canned replies.
-
-Every assistant message carries a label saying how it was produced (your PlaceGenie data / built-in guide / AI-written / AI unavailable / something I cannot know).
-
-**Running without an AI (default).** `LLM_PROVIDER=none` (or an empty key) works fully: the guide and the data answers above. Nothing else is needed.
-
-**Connecting an LLM.** Set in `backend/.env` (restart the backend):
-
-| Variable | Meaning |
-|---|---|
-| `LLM_PROVIDER` | `none` (default), `anthropic`, or `openai` (OpenAI or any OpenAI-compatible server) |
-| `LLM_API_KEY` | your key; never commit it (`.env` is git-ignored) |
-| `LLM_MODEL`, `LLM_BASE_URL` | optional; defaults are `claude-haiku-4-5-20251001` and `gpt-4o-mini`, and each provider's public endpoint |
-| `LLM_TIMEOUT_SECONDS`, `LLM_MAX_TOKENS` | optional limits (20 s, 600 tokens) |
-| `LLM_SHARE_PROFILE` | `true` sends a short summary (branch, CGPA, skills, preferred roles, counts of applications) so answers can be personal; `false` sends only the question |
-
-Providers live in `backend/app/ai/chatbot/providers/` behind a small `LLMProvider` interface (`generate(system, turns)`); adding another is one class plus one line in `factory.py`. A missing key, an unknown provider name, a timeout, a 4xx/5xx, a bad reply or any provider error never breaks the chat: the student gets the built-in guide's answer with a notice, and the details go only to the server log (never the key).
-
-**Privacy.** The LLM never receives the student's name, email, phone number, resume text, interview notes or messages from other students. Chat history stores only the message text, who said it, how a reply was produced and a timestamp (no prompts, profile snapshots or IP addresses). Students can delete one conversation or all of them; deleting an account removes its chats.
-
-**Limits.** Messages are at most 1000 characters (`CHAT_MAX_MESSAGE_CHARS`), 15 per minute per student (`CHAT_RATE_LIMIT_PER_MINUTE`, answered with 429 and a `Retry-After` header) and 200 per conversation (`CHAT_MAX_MESSAGES_PER_CONVERSATION`).
-
-| Endpoint (students only) | Purpose |
-|---|---|
-| `GET /chat/info` | AI or built-in-guide mode, starter questions, disclaimer |
-| `POST /chat/messages` `{message, conversation_id?}` | send a message; starts a conversation when none is given |
-| `GET /chat/conversations`, `GET /chat/conversations/{id}` | list (most recent first) / open one with its messages |
-| `DELETE /chat/conversations/{id}`, `DELETE /chat/conversations` | delete one / all |
-
-Another student's conversation is always "not found" (404). The assistant is guidance only and says so on the page.
-
-## Student dashboard (Phase 12)
-The student's home page (`/student`) is one summary of the whole journey. It re-implements nothing: `GET /api/v1/dashboard` (student only, read-only) composes the existing services, so its numbers always match the individual pages, and every figure is computed from the database on each request.
-
-| Widget | Shows | Built from |
-|---|---|---|
-| Summary cards | profile %, eligible jobs, active applications, upcoming interviews | profile, recommendations, applications, interviews |
-| Next step + progress | 6 milestones (profile >= 80%, resume, applied, shortlisted, interview recorded, offer) and the first thing left to do | all of the above |
-| Recommended for you | best 5 matches with score, eligibility and "applied" | recommendations (Phase 7) |
-| Eligible opportunities | how many open jobs you qualify for, the best ones you have not applied to, and those closing within 7 days | eligibility (Phase 6) |
-| Applications / Interviews | per-status bars, recent applications, upcoming interviews, past ones missing a result, pass rate | Phase 10 |
-| Resume | status, completeness, skills found, top suggestions | Phase 8 |
-| Skill gaps | skills missing from the jobs that actually fit you (score >= 30%, at least 3 jobs), and the "closest opportunity" that only lacks skills | Phases 7 and 9 |
-| Placement statistics | open jobs, companies hiring, closing this week, share you are eligible for, most requested skills (marked "you have it" / "missing"), interview pass rate | job data |
-
-Each widget has its own loading skeleton, empty state ("what to do next") and error state. If one section fails on the server it comes back as `null` with a message in `errors`, and the rest of the page still loads (that widget offers "Try again"). Quick actions: Complete Profile, Upload Resume, Find Jobs, View Recommendations, Check Skill Gaps, Prepare for Interview (opens the assistant with that question already asked) and Open Chatbot; the one matching your next step is highlighted. The navigation bar collapses into a menu on small screens.
-
-## Coordinator dashboard (Phase 13)
-Log in as a coordinator (`python -m app.database.create_coordinator`) to reach `/coordinator`. Coordinator pages and APIs are separate from the student ones: a student who opens a coordinator page is redirected to their own dashboard, and every coordinator API answers a student with **403** (and a visitor who is not logged in with **401**). Nothing is duplicated: companies, jobs and applications use the Phase 5 and Phase 10 endpoints unchanged; the new `/coordinators/*` endpoints only add the views that did not exist (cohort statistics, student search, reports).
-
-| Page | What the coordinator can do | API |
-|---|---|---|
-| Dashboard | totals (students, companies, jobs, applications), shortlisted / selected students, rejected applications, placement rate, application funnel, latest applications, "needs attention" (unreviewed applications, jobs closing in 7 days, jobs nobody applied to, interviews this week) | `GET /coordinators/dashboard` |
-| Students | search (name, email, college), filter (branch, year, minimum CGPA, resume, profile >= 80%, placement stage), sort, page | `GET /coordinators/students` |
-| Student profile | profile, resume, skill gaps, the same 6-step progress the student sees, applications (change status here), interviews | `GET /coordinators/students/{id}` |
-| Companies | view, search, add, edit, delete | `GET/POST /companies`, `PUT/DELETE /companies/{id}` |
-| Jobs | view, filter (company, status, search), add, edit (skills with importance and weight, allowed branches, certifications), delete | `GET/POST /jobs`, `PUT/DELETE /jobs/{id}` |
-| Applications | filter by company, job, status or search; set the official status | `GET /applications`, `PATCH /applications/{id}/status` |
-| Progress | how many students reached each milestone, where everyone is now, who needs attention | `GET /coordinators/progress` |
-| Analytics | applications by company, placement by branch and by CGPA band, interview pass rate, skills asked by jobs against skills students have | `GET /coordinators/analytics` |
-| Reports | CSV downloads: students, applications, placements, companies, skills | `GET /coordinators/reports`, `GET /coordinators/reports/{kind}.csv` |
-
-How the numbers are defined (all computed from the database on each request; nothing is stored or estimated):
-- **Placement rate** = students with at least one *selected* application / registered students. It is shown only when there are at least 5 students (otherwise the page says why it is hidden). Branch and CGPA-band rates use the same rule for their own group size.
-- **Shortlisted students** = students with an application being considered (shortlisted, online assessment, technical or HR interview). **Placement stage** of a student: *placed* (any selected application), *in process*, *applied*, *rejected* (every application rejected) or *not applied* (none, or only withdrawn ones).
-- The cohort **progress** counts the same six milestones each student sees on their own dashboard, so the two views always agree; a test adds up every student's own tracker and compares.
-- Deleting a company or job that has applications is refused (409) with a message; close the job instead. A student's withdrawal cannot be overridden by a coordinator.
-- CSV files add an apostrophe in front of any cell that starts with `= + - @` so a student's name cannot run as a spreadsheet formula, and are downloaded through the logged-in API client (a plain link would not carry the token).
-
-Authorization tests (`tests/test_authorization_matrix.py`) list every API route once as public, any-user, coordinator-only or student-only, and check the real status codes for visitors, students and coordinators for each. A new route that is not classified fails the suite, so access rules cannot be forgotten.
-
-## Reporting and analytics (Phase 14)
-Two reports, both counted from the database every time they are opened (nothing is stored or cached), and both built from services that already existed, so a report can never disagree with a page.
-
-**Student report** (`/student/report`, `GET /reports/me`, student only): the student's own applications and status distribution, interviews (passed / not cleared / pending, pass rate), overall outcome (placed, in process, applied, rejected, not applied), the top recommended jobs, skill gaps and the six-step placement progress. Reuses the student dashboard sections plus the application and interview lists. Export: **Download CSV** (`GET /reports/me.csv`, one row per application) and **Print / save as PDF** (the browser's print dialog; the navigation is hidden when printing).
-
-**Coordinator report** (`/coordinator/reports`, `GET /coordinators/report`, coordinator only):
-
-| Section | Chart | Definition |
-|---|---|---|
-| Student placement statistics | stage bars; placed vs not placed per branch and per CGPA band | placed = a student with at least one *selected* application; the rate needs >= 5 students (otherwise the page says "needs 5+ students") |
-| Application status distribution | bars (only statuses that occur) | every application record, withdrawn included |
-| Company-wise applications | stacked bars: in process / selected / rejected / applied or withdrawn | one bar per company that has applications; the page says how many have none |
-| Job-wise applications | table, busiest 15 shown | one row per job; awaiting + in process + selected + rejected + withdrawn = applications (tested) |
-| Selected students | table | one row per selected application, newest first |
-| Common skill gaps | bars: students lacking each skill | skills that **open jobs** ask for, with `students lacking = all students - students having it`; skills every student has are left out |
-| Placement progress | bars | the same milestones each student sees, so the two always agree |
-| Interview results | stacked bar and pass rate | pass rate = passed / (passed + not cleared); results still pending are not counted |
-
-Export: CSV downloads for students, applications, placements, companies, **jobs (new)** and skills, plus Print / save as PDF. Charts are plain HTML bars (no chart library), every bar prints its number, and a chart with nothing to show is replaced by a sentence saying why. Only comparisons that mean something are drawn: no pie charts of two numbers, no chart of one value.
-
-Efficiency: the coordinator report loads the cohort once and groups it in memory; the student report loads the applications and interviews once and shares them with the dashboard sections. Tests count the SQL statements and fail if the number grows with the number of students or applications.
-
-## Testing and audit (Phase 15)
-A full audit of every module; no new features. What was checked and what changed:
-
-| Area | How it was checked | Result |
-|---|---|---|
-| Every API route | `test_robustness.py` calls all 72 routes as visitor, student and coordinator with odd ids (0, -1, 2^63, `abc`), malformed JSON, wrong types, NaN/Infinity, huge strings and SQL-like text | **Fixed:** an out-of-range id crashed the database driver. All ids are now bounded (`app/schemas/ids.py`); an impossible id in the URL is a plain 404, in a body or filter a 422 |
-| Who may call what | `test_authorization_matrix.py`: every route is classified; new routes must be added | unchanged, all pass |
-| Error handling | `test_security.py` | **Fixed:** database conflicts were reported as "database unavailable" (503). Now: conflict 409, invalid value 422, database down 503, anything unexpected a JSON 500 with no internals (full details only in the server log) |
-| CORS | only the configured frontend origin is allowed, preflights from other sites refused, never `*` | ok |
-| Secrets | no password, key or `.env` in git or its history; `.env.example` holds placeholders only; the JWT secret must be 32+ characters | ok (tested) |
-| Responses | no password hash, password or JWT secret in any response, including CSV exports | ok (tested) |
-| Headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` on every response | **added** |
-| Queries | `test_query_efficiency.py` counts SQL statements for 17 list/dashboard/report endpoints with small and large data | no N+1 queries found |
-| MySQL only | concurrent double-register and double-apply against real MySQL (8 at once); input lengths compared with column sizes | one 201 and seven clean 409s each; every input limit fits its column |
-| Frontend | every student and coordinator page opened in the browser with real data, plus invalid ids and wrong-role URLs; console and server log checked | **Fixed:** an invalid student id on the coordinator page showed "Not found."; it now says "This student does not exist." No other errors |
-
-Known limitations (deliberately not changed in this phase): login has no attempt limit (the chatbot does); access tokens cannot be revoked before they expire (60 minutes); the JavaScript bundle is a single 150 kB (gzipped) file.
-
-## Tests
-```bash
-cd backend && .venv\Scripts\python -m pytest     # 1040 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, reports and analytics, authorization matrix, robustness (every route), security, query efficiency
-cd frontend && npm test                            # 233 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar, coordinator pages, reports and charts
+cd backend  && python -m pytest       # 1,040 tests (~15 min): every module, authorization of all 72 routes,
+                                      # malformed input on every route, security, query efficiency
+cd frontend && npm test               # 233 tests
 cd frontend && npm run lint && npm run build
 ```
+Backend tests use a temporary SQLite database and never touch MySQL or your `.env` secrets.
+What each test file covers and the manual checks done before release: [docs/TESTING.md](docs/TESTING.md).
 
-## Database tables (Phase 2)
-23 tables, created automatically when the backend starts (`create_all`; no migrations yet):
-`users, students, coordinators` (identity and profiles) - `branches, skills, job_roles` (lookups) -
-`student_skills, certifications, projects, experiences, student_preferred_roles, student_preferred_companies` (profile) -
-`companies, jobs, job_skills, job_allowed_branches, job_required_certifications` (jobs and eligibility rules) -
-`resumes, resume_analyses, resume_detected_skills` - `applications, interview_stages` - `chat_messages`.
-Eligibility results, recommendations and skill gaps are deliberately not stored; they are computed on request.
-Model tests run on in-memory SQLite (`pytest`); the schema also compiles for MySQL.
+## API documentation
+- Interactive (all request/response schemas, try it out): **http://127.0.0.1:8000/docs** (or `/redoc`)
+- Reference of all 72 endpoints with who may call each: [docs/API.md](docs/API.md)
+
+Base path `/api/v1`. Log in with `POST /auth/login`, then send `Authorization: Bearer <token>`.
+
+## Screenshots
+Add images to `docs/screenshots/` and they will appear here.
+
+| Screen | File |
+|---|---|
+| Login | `docs/screenshots/login.png` |
+| Student dashboard | `docs/screenshots/student-dashboard.png` |
+| Eligibility check | `docs/screenshots/eligibility.png` |
+| Recommendations | `docs/screenshots/recommendations.png` |
+| Resume analysis | `docs/screenshots/resume-analysis.png` |
+| Skill gap | `docs/screenshots/skill-gap.png` |
+| Placement assistant | `docs/screenshots/chatbot.png` |
+| Coordinator dashboard | `docs/screenshots/coordinator-dashboard.png` |
+| Placement report | `docs/screenshots/coordinator-report.png` |
+
+<!-- Example once the files exist:
+![Student dashboard](docs/screenshots/student-dashboard.png)
+-->
+
+## More documentation
+| Document | Contents |
+|---|---|
+| [DEVELOPMENT.md](DEVELOPMENT.md) | daily workflow, code conventions, adding an endpoint or table |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | layers, request flow, design principles, module map |
+| [docs/FEATURES.md](docs/FEATURES.md) | the exact rules of every module (eligibility, scoring, resume, skill gap, chatbot, reports) |
+| [docs/API.md](docs/API.md) | all endpoints, roles, status codes |
+| [docs/DATABASE.md](docs/DATABASE.md) | setup, troubleshooting, design rules, every table and column, backups |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | every environment variable |
+| [docs/TESTING.md](docs/TESTING.md) | running and writing tests, what is covered |
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | production setup with nginx, HTTPS, systemd |
+| [docs/CHECKLIST.md](docs/CHECKLIST.md) | final project checklist |
+
+## Known limitations
+- Login attempts are not rate limited (the chatbot is); tokens stay valid until they expire (60 minutes by default).
+- No database migration tool: new tables are created automatically, changed tables need manual changes.
+- Resume analysis needs a text-based PDF (no OCR for scanned images) and uses keyword/pattern rules, so unusual layouts can be read imperfectly.
+- Times are stored without a time zone (one college, one time zone).
