@@ -2,9 +2,11 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
+from fastapi.exception_handlers import request_validation_exception_handler
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import DataError, IntegrityError, SQLAlchemyError
 
 import app.models  # noqa: F401  (registers tables on Base.metadata)
 from app.core.config import get_settings
@@ -74,6 +76,37 @@ async def limit_upload_size(request: Request, call_next):
     return await call_next(request)
 
 
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "no-referrer")
+    return response
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    # /jobs/abc or /jobs/0 names something that cannot exist: answer "not found" like any unknown id.
+    errors = exc.errors()
+    if errors and all(e.get("loc", ("",))[0] == "path" for e in errors):
+        return JSONResponse(status_code=404, content={"detail": "Not found."})
+    return await request_validation_exception_handler(request, exc)
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(_: Request, exc: IntegrityError):
+    # e.g. two identical requests at the same moment (double-click on Apply): the unique constraint wins
+    logger.warning("Integrity error: %s", exc.orig)
+    return JSONResponse(status_code=409, content={"detail": "This conflicts with data that already exists. Refresh the page and try again."})
+
+
+@app.exception_handler(DataError)
+async def data_error_handler(_: Request, exc: DataError):
+    logger.warning("Data error: %s", exc.orig)
+    return JSONResponse(status_code=422, content={"detail": "One of the values is not valid for the database."})
+
+
 @app.exception_handler(SQLAlchemyError)
 async def database_error_handler(_: Request, exc: SQLAlchemyError):
     logger.exception("Database error")
@@ -81,6 +114,13 @@ async def database_error_handler(_: Request, exc: SQLAlchemyError):
         status_code=503,
         content={"detail": "The database is temporarily unavailable. Please try again later."},
     )
+
+
+@app.exception_handler(Exception)
+async def unexpected_error_handler(_: Request, exc: Exception):
+    # Logged in full on the server; the client never sees a traceback or internal names.
+    logger.exception("Unhandled error")
+    return JSONResponse(status_code=500, content={"detail": "Something went wrong on the server. Please try again later."})
 
 
 API_PREFIX = "/api/v1"

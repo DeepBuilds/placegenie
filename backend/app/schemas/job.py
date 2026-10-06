@@ -4,6 +4,7 @@ from datetime import date, datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models import JobStatus, JobType, SkillImportance
+from app.schemas.ids import BodyId
 
 URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
 
@@ -62,7 +63,7 @@ class CompanyBrief(BaseModel):
 
 # ---------- jobs ----------
 class JobSkillIn(BaseModel):
-    skill_id: int
+    skill_id: BodyId
     importance: SkillImportance = SkillImportance.REQUIRED
     weight: int = Field(default=1, ge=1, le=5)
 
@@ -70,8 +71,8 @@ class JobSkillIn(BaseModel):
 class JobIn(BaseModel):
     """Full replacement of a job (used for both create and update)."""
 
-    company_id: int
-    role_id: int | None = None
+    company_id: BodyId
+    role_id: BodyId | None = None
     title: str = Field(min_length=2, max_length=150)
     description: str | None = Field(default=None, max_length=5000)
     location: str | None = Field(default=None, max_length=100)
@@ -82,7 +83,7 @@ class JobIn(BaseModel):
     deadline: date | None = None
     status: JobStatus = JobStatus.OPEN
     skills: list[JobSkillIn] = Field(default_factory=list, max_length=30)
-    allowed_branch_ids: list[int] = Field(default_factory=list, max_length=20)  # empty = all branches
+    allowed_branch_ids: list[BodyId] = Field(default_factory=list, max_length=20)  # empty = all branches
     required_certifications: list[str] = Field(default_factory=list, max_length=10)
 
     _clean = field_validator("title", "location")(classmethod(lambda cls, v: _clean(v)))

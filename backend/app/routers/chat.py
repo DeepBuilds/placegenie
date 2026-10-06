@@ -11,6 +11,7 @@ from app.models import User
 from app.schemas.chat import ChatInfo, ChatReplyOut, ChatRequest, ConversationDetail, ConversationOut
 from app.services import chat_service
 from app.services.chatbot_engine import ChatbotEngine
+from app.schemas.ids import PathId
 
 router = APIRouter(prefix="/chat", tags=["Chatbot"])
 
@@ -50,12 +51,12 @@ def list_conversations(user: User = Depends(require_student), db: Session = Depe
 
 
 @router.get("/conversations/{conversation_id}", response_model=ConversationDetail)
-def get_conversation(conversation_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def get_conversation(conversation_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     return chat_service.get_conversation(db, user, conversation_id)
 
 
 @router.delete("/conversations/{conversation_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_conversation(conversation_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def delete_conversation(conversation_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     chat_service.delete_conversation(db, user, conversation_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

@@ -10,6 +10,7 @@ from app.schemas.auth import UserOut
 from app.schemas.coordinator import Analytics, CohortProgress, CoordinatorDashboard, StudentDetail, StudentPage
 from app.schemas.report import CoordinatorReport
 from app.services import coordinator_service, report_service, reporting_service
+from app.schemas.ids import PathId, QueryId
 
 # Every route here is coordinator-only. Students get 403; visitors who are not logged in get 401.
 router = APIRouter(prefix="/coordinators", tags=["Coordinators"], dependencies=[Depends(require_coordinator)])
@@ -29,7 +30,7 @@ def dashboard(db: Session = Depends(get_db)):
 @router.get("/students", response_model=StudentPage)
 def list_students(
     q: str | None = Query(default=None, max_length=100, description="Name, email or college"),
-    branch_id: int | None = None,
+    branch_id: QueryId = None,
     year: int | None = Query(default=None, ge=1, le=6),
     min_cgpa: float | None = Query(default=None, ge=0, le=10),
     stage: Literal["placed", "in_process", "applied", "rejected", "not_applied"] | None = None,
@@ -48,7 +49,7 @@ def list_students(
 
 
 @router.get("/students/{student_id}", response_model=StudentDetail)
-def student_detail(student_id: int, db: Session = Depends(get_db)):
+def student_detail(student_id: PathId, db: Session = Depends(get_db)):
     """One student's placement profile: profile, resume, progress, skill gaps, applications and interviews."""
     return coordinator_service.student_detail(db, student_id)
 

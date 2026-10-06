@@ -8,6 +8,7 @@ from app.database.session import get_db
 from app.models import User
 from app.schemas.resume import ResumeAnalysisOut, ResumeOut
 from app.services import resume_service
+from app.schemas.ids import PathId
 
 router = APIRouter(prefix="/resumes", tags=["Resumes"])
 
@@ -32,24 +33,24 @@ def my_resume(user: User = Depends(require_student), db: Session = Depends(get_d
 
 
 @router.get("/{resume_id}/analysis", response_model=ResumeAnalysisOut)
-def resume_analysis(resume_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def resume_analysis(resume_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     return resume_service.get_analysis(db, user, resume_id)
 
 
 @router.post("/{resume_id}/analyze", response_model=ResumeAnalysisOut)
-def reanalyze_resume(resume_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def reanalyze_resume(resume_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Re-run the analysis on the stored text (no new upload needed)."""
     return resume_service.reanalyze(db, user, resume_id)
 
 
 @router.post("/{resume_id}/sync-skills", response_model=ResumeAnalysisOut)
-def sync_skills(resume_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def sync_skills(resume_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Add the skills detected in this resume to the student's own profile."""
     return resume_service.sync_skills(db, user, resume_id)
 
 
 @router.get("/{resume_id}/file")
-def download_resume(resume_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def download_resume(resume_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Download the student's own PDF."""
     path, name = resume_service.file_for_download(db, user, resume_id)
     return FileResponse(
@@ -59,6 +60,6 @@ def download_resume(resume_id: int, user: User = Depends(require_student), db: S
 
 
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_resume(resume_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def delete_resume(resume_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     resume_service.delete_resume(db, user, resume_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

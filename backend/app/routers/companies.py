@@ -8,6 +8,7 @@ from app.models import User
 from app.repositories import job_repository as repo
 from app.schemas.job import CompanyIn, CompanyOut, JobPage
 from app.services import job_service as svc
+from app.schemas.ids import PathId
 
 router = APIRouter(prefix="/companies", tags=["Companies"])
 
@@ -34,14 +35,14 @@ def list_companies(
 
 
 @router.get("/{company_id}", response_model=CompanyOut)
-def get_company(company_id: int, _: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_company(company_id: PathId, _: User = Depends(get_current_user), db: Session = Depends(get_db)):
     company = svc.get_company_or_404(db, company_id)
     return svc.to_company_out(company, repo.count_open_jobs(db, company_id))
 
 
 @router.get("/{company_id}/jobs", response_model=JobPage)
 def jobs_of_company(
-    company_id: int,
+    company_id: PathId,
     limit: int = Query(default=50, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
     user: User = Depends(get_current_user),
@@ -58,11 +59,11 @@ def create_company(data: CompanyIn, _: User = Depends(require_coordinator), db: 
 
 
 @router.put("/{company_id}", response_model=CompanyOut)
-def update_company(company_id: int, data: CompanyIn, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
+def update_company(company_id: PathId, data: CompanyIn, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
     return svc.update_company(db, company_id, data)
 
 
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_company(company_id: int, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
+def delete_company(company_id: PathId, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
     svc.delete_company(db, company_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

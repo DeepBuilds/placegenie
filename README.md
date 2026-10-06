@@ -303,9 +303,27 @@ Export: CSV downloads for students, applications, placements, companies, **jobs 
 
 Efficiency: the coordinator report loads the cohort once and groups it in memory; the student report loads the applications and interviews once and shares them with the dashboard sections. Tests count the SQL statements and fail if the number grows with the number of students or applications.
 
+## Testing and audit (Phase 15)
+A full audit of every module; no new features. What was checked and what changed:
+
+| Area | How it was checked | Result |
+|---|---|---|
+| Every API route | `test_robustness.py` calls all 72 routes as visitor, student and coordinator with odd ids (0, -1, 2^63, `abc`), malformed JSON, wrong types, NaN/Infinity, huge strings and SQL-like text | **Fixed:** an out-of-range id crashed the database driver. All ids are now bounded (`app/schemas/ids.py`); an impossible id in the URL is a plain 404, in a body or filter a 422 |
+| Who may call what | `test_authorization_matrix.py`: every route is classified; new routes must be added | unchanged, all pass |
+| Error handling | `test_security.py` | **Fixed:** database conflicts were reported as "database unavailable" (503). Now: conflict 409, invalid value 422, database down 503, anything unexpected a JSON 500 with no internals (full details only in the server log) |
+| CORS | only the configured frontend origin is allowed, preflights from other sites refused, never `*` | ok |
+| Secrets | no password, key or `.env` in git or its history; `.env.example` holds placeholders only; the JWT secret must be 32+ characters | ok (tested) |
+| Responses | no password hash, password or JWT secret in any response, including CSV exports | ok (tested) |
+| Headers | `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` on every response | **added** |
+| Queries | `test_query_efficiency.py` counts SQL statements for 17 list/dashboard/report endpoints with small and large data | no N+1 queries found |
+| MySQL only | concurrent double-register and double-apply against real MySQL (8 at once); input lengths compared with column sizes | one 201 and seven clean 409s each; every input limit fits its column |
+| Frontend | every student and coordinator page opened in the browser with real data, plus invalid ids and wrong-role URLs; console and server log checked | **Fixed:** an invalid student id on the coordinator page showed "Not found."; it now says "This student does not exist." No other errors |
+
+Known limitations (deliberately not changed in this phase): login has no attempt limit (the chatbot does); access tokens cannot be revoked before they expire (60 minutes); the JavaScript bundle is a single 150 kB (gzipped) file.
+
 ## Tests
 ```bash
-cd backend && .venv\Scripts\python -m pytest     # 925 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, reports and analytics, authorization matrix
+cd backend && .venv\Scripts\python -m pytest     # 1040 tests: health, auth/RBAC, models, profile, companies/jobs, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, student dashboard, coordinator dashboard, reports and analytics, authorization matrix, robustness (every route), security, query efficiency
 cd frontend && npm test                            # 233 tests: auth, profile, jobs, job details, companies, eligibility, recommendations, resumes, skill gap, applications/interviews, chatbot, dashboard, navbar, coordinator pages, reports and charts
 cd frontend && npm run lint && npm run build
 ```

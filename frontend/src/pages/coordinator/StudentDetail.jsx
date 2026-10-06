@@ -18,7 +18,7 @@ function Fact({ label, children }) {
 
 export default function StudentDetail() {
   const { id } = useParams()
-  const { data, error, loading, reload } = useLoad(() => getStudentDetail(id), id)
+  const { data, error, loading, reload } = useLoad(() => getStudentDetail(id), id, { notFound: 'This student does not exist.' })
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">

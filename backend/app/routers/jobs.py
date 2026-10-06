@@ -12,6 +12,7 @@ from app.schemas.job import JobIn, JobOut, JobPage
 from app.schemas.skill_gap import SkillGapOut
 from app.services import eligibility_service, skill_gap_service
 from app.services import job_service as svc
+from app.schemas.ids import MAX_ID, PathId, QueryId
 
 router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
@@ -19,11 +20,11 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
 @router.get("", response_model=JobPage)
 def search_jobs(
     q: str | None = Query(default=None, max_length=100, description="Search title, description, company or skill"),
-    company_id: int | None = None,
+    company_id: QueryId = None,
     job_type: JobType | None = None,
-    role_id: int | None = None,
-    skill_id: int | None = None,
-    branch_id: int | None = Query(default=None, description="Jobs open to this branch"),
+    role_id: QueryId = None,
+    skill_id: QueryId = None,
+    branch_id: int | None = Query(default=None, ge=1, le=MAX_ID, description="Jobs open to this branch"),
     location: str | None = Query(default=None, max_length=100),
     max_min_cgpa: float | None = Query(default=None, ge=0, le=10, description="Jobs whose minimum CGPA is at most this"),
     hide_expired: bool = False,
@@ -44,12 +45,12 @@ def search_jobs(
 
 
 @router.get("/{job_id}", response_model=JobOut)
-def get_job(job_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def get_job(job_id: PathId, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return svc.get_job_for(db, job_id, user)
 
 
 @router.post("/{job_id}/eligibility", response_model=EligibilityOut)
-def check_eligibility(job_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def check_eligibility(job_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Rule-based check of the logged-in student's profile against this job's requirements.
 
     Nothing is stored: the result is computed from the current profile every time.
@@ -58,7 +59,7 @@ def check_eligibility(job_id: int, user: User = Depends(require_student), db: Se
 
 
 @router.get("/{job_id}/skill-gap", response_model=SkillGapOut)
-def skill_gap(job_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def skill_gap(job_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Compare the logged-in student's skills with this job's skills: matched, missing, match % and priorities.
 
     Read-only and computed from the current profile on every request; nothing is stored.
@@ -73,11 +74,11 @@ def create_job(data: JobIn, _: User = Depends(require_coordinator), db: Session 
 
 
 @router.put("/{job_id}", response_model=JobOut)
-def update_job(job_id: int, data: JobIn, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
+def update_job(job_id: PathId, data: JobIn, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
     return svc.update_job(db, job_id, data)
 
 
 @router.delete("/{job_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_job(job_id: int, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
+def delete_job(job_id: PathId, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
     svc.delete_job(db, job_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

@@ -4,13 +4,14 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models import ApplicationStatus, InterviewStageType, JobType, StageOutcome
 from app.schemas.eligibility import CriterionOut
+from app.schemas.ids import BodyId
 
 MIN_YEAR, MAX_YEAR = 2000, 2100
 
 
 # ---------- requests ----------
 class ApplyRequest(BaseModel):
-    job_id: int
+    job_id: BodyId
 
 
 class StatusUpdate(BaseModel):

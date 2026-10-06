@@ -4,6 +4,7 @@ from datetime import date
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.models import JobType, Proficiency, SkillSource
+from app.schemas.ids import BodyId
 
 PHONE_RE = re.compile(r"^\+?[0-9][0-9 \-]{6,18}[0-9]$")
 URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
@@ -34,7 +35,7 @@ class ProfileUpdate(BaseModel):
     full_name: str = Field(min_length=2, max_length=100)
     phone: str | None = Field(default=None, max_length=20)
     college: str | None = Field(default=None, max_length=150)
-    branch_id: int | None = None
+    branch_id: BodyId | None = None
     year: int | None = Field(default=None, ge=1, le=6)
     semester: int | None = Field(default=None, ge=1, le=12)
     cgpa: float | None = Field(default=None, ge=0, le=10)
@@ -75,7 +76,7 @@ class ProfileUpdate(BaseModel):
 
 # ---------- skills ----------
 class SkillEntry(BaseModel):
-    skill_id: int
+    skill_id: BodyId
     proficiency: Proficiency = Proficiency.BEGINNER
 
 
@@ -176,8 +177,8 @@ class ExperienceOut(ExperienceIn):
 
 # ---------- preferences ----------
 class PreferencesUpdate(BaseModel):
-    preferred_role_ids: list[int] = Field(default_factory=list, max_length=10)
-    preferred_company_ids: list[int] = Field(default_factory=list, max_length=20)
+    preferred_role_ids: list[BodyId] = Field(default_factory=list, max_length=10)
+    preferred_company_ids: list[BodyId] = Field(default_factory=list, max_length=20)
 
 
 # ---------- full profile ----------

@@ -207,7 +207,7 @@ def test_students_cannot_see_or_change_each_others_resumes(client, h, other_h):
 
 def test_unknown_resume_id_is_404_not_500(client, h):
     assert client.get(f"{RES}/99999/analysis", headers=h).status_code == 404
-    assert client.get(f"{RES}/not-a-number/analysis", headers=h).status_code == 422
+    assert client.get(f"{RES}/not-a-number/analysis", headers=h).status_code == 404
 
 
 def test_client_filename_cannot_choose_the_stored_path(client, h, db_session):

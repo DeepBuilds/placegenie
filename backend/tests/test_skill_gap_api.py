@@ -211,7 +211,7 @@ def test_deterministic_and_stores_nothing(client, h, demo):
 # ---------- errors and authorization ----------
 def test_unknown_job_404(client, h):
     assert client.get(f"{API}/jobs/99999/skill-gap", headers=h).status_code == 404
-    assert client.get(f"{API}/jobs/abc/skill-gap", headers=h).status_code == 422
+    assert client.get(f"{API}/jobs/abc/skill-gap", headers=h).status_code == 404
 
 
 def test_closed_job_hidden_from_students(client, h, demo):

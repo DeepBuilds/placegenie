@@ -583,7 +583,7 @@ def test_students_cannot_read_change_or_continue_each_others_conversations(clien
 def test_unknown_conversation_is_404(client, h):
     assert client.get(f"{CHAT}/conversations/99999", headers=h).status_code == 404
     assert say(client, h, "hello", 99999).status_code == 404
-    assert client.get(f"{CHAT}/conversations/abc", headers=h).status_code == 422
+    assert client.get(f"{CHAT}/conversations/abc", headers=h).status_code == 404
 
 
 def test_job_data_in_chat_respects_job_visibility(client, h, demo):

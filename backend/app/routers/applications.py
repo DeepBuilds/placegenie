@@ -13,6 +13,7 @@ from app.schemas.application import (
     StatusUpdate,
 )
 from app.services import application_service as svc
+from app.schemas.ids import PathId, QueryId
 
 router = APIRouter(prefix="/applications", tags=["Applications"])
 
@@ -27,7 +28,7 @@ def apply(data: ApplyRequest, user: User = Depends(require_student), db: Session
 @router.get("/me", response_model=ApplicationList)
 def my_applications(
     status_filter: ApplicationStatus | None = Query(default=None, alias="status"),
-    job_id: int | None = None,
+    job_id: QueryId = None,
     user: User = Depends(require_student),
     db: Session = Depends(get_db),
 ):
@@ -36,7 +37,7 @@ def my_applications(
 
 
 @router.post("/{application_id}/withdraw", response_model=ApplicationDetail)
-def withdraw(application_id: int, user: User = Depends(require_student), db: Session = Depends(get_db)):
+def withdraw(application_id: PathId, user: User = Depends(require_student), db: Session = Depends(get_db)):
     """Withdraw your own application (not possible once it is selected or rejected)."""
     return svc.withdraw(db, user, application_id)
 
@@ -45,8 +46,8 @@ def withdraw(application_id: int, user: User = Depends(require_student), db: Ses
 @router.get("", response_model=ApplicationList)
 def all_applications(
     status_filter: ApplicationStatus | None = Query(default=None, alias="status"),
-    job_id: int | None = None,
-    company_id: int | None = None,
+    job_id: QueryId = None,
+    company_id: QueryId = None,
     q: str | None = Query(default=None, max_length=100, description="Student name/email, job title or company"),
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
@@ -58,18 +59,18 @@ def all_applications(
 
 
 @router.patch("/{application_id}/status", response_model=ApplicationDetail)
-def update_status(application_id: int, data: StatusUpdate, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
+def update_status(application_id: PathId, data: StatusUpdate, _: User = Depends(require_coordinator), db: Session = Depends(get_db)):
     """Set the official application status (shortlisted, selected, ...). Coordinators only."""
     return svc.set_status(db, application_id, data.status)
 
 
 # ----- both roles (a student only reaches their own) -----
 @router.get("/{application_id}", response_model=ApplicationDetail)
-def application_detail(application_id: int, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def application_detail(application_id: PathId, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return svc.get_detail(db, user, application_id)
 
 
 @router.post("/{application_id}/interviews", response_model=InterviewOut, status_code=status.HTTP_201_CREATED)
-def add_interview(application_id: int, data: InterviewCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def add_interview(application_id: PathId, data: InterviewCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """Record an interview / test stage for an application."""
     return svc.add_interview(db, user, application_id, data)

@@ -297,7 +297,7 @@ def test_student_detail_for_a_student_who_has_done_nothing(client, ch, cohort):
 
 def test_student_detail_unknown_id(client, ch, cohort):
     assert client.get(f"{CO}/students/99999", headers=ch).status_code == 404
-    assert client.get(f"{CO}/students/abc", headers=ch).status_code == 422
+    assert client.get(f"{CO}/students/abc", headers=ch).status_code == 404
 
 
 def test_looking_at_a_student_changes_nothing(client, ch, cohort, demo):

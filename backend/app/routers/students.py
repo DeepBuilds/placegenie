@@ -14,6 +14,7 @@ from app.schemas.profile import (
     SkillsUpdate,
 )
 from app.services import profile_service as svc
+from app.schemas.ids import PathId
 
 router = APIRouter(prefix="/students/me", tags=["Student profile"])
 
@@ -58,12 +59,12 @@ def add_certification(data: CertificationIn, student: Student = Depends(current_
 
 
 @router.put("/certifications/{item_id}", response_model=ProfileOut)
-def update_certification(item_id: int, data: CertificationIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def update_certification(item_id: PathId, data: CertificationIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.update_item(db, student, "certifications", item_id, data)
 
 
 @router.delete("/certifications/{item_id}", response_model=ProfileOut)
-def delete_certification(item_id: int, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def delete_certification(item_id: PathId, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.delete_item(db, student, "certifications", item_id)
 
 
@@ -74,12 +75,12 @@ def add_project(data: ProjectIn, student: Student = Depends(current_student), db
 
 
 @router.put("/projects/{item_id}", response_model=ProfileOut)
-def update_project(item_id: int, data: ProjectIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def update_project(item_id: PathId, data: ProjectIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.update_item(db, student, "projects", item_id, data)
 
 
 @router.delete("/projects/{item_id}", response_model=ProfileOut)
-def delete_project(item_id: int, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def delete_project(item_id: PathId, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.delete_item(db, student, "projects", item_id)
 
 
@@ -90,10 +91,10 @@ def add_experience(data: ExperienceIn, student: Student = Depends(current_studen
 
 
 @router.put("/experiences/{item_id}", response_model=ProfileOut)
-def update_experience(item_id: int, data: ExperienceIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def update_experience(item_id: PathId, data: ExperienceIn, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.update_item(db, student, "experiences", item_id, data)
 
 
 @router.delete("/experiences/{item_id}", response_model=ProfileOut)
-def delete_experience(item_id: int, student: Student = Depends(current_student), db: Session = Depends(get_db)):
+def delete_experience(item_id: PathId, student: Student = Depends(current_student), db: Session = Depends(get_db)):
     return svc.delete_item(db, student, "experiences", item_id)

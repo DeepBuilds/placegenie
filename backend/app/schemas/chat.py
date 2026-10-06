@@ -4,12 +4,13 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 from app.models import ChatRole
+from app.schemas.ids import BodyId
 
 
 class ChatRequest(BaseModel):
     # Length and emptiness are checked in the service so the student gets a friendly message.
     message: str = Field(max_length=20000)
-    conversation_id: int | None = None
+    conversation_id: BodyId | None = None
 
 
 class MessageOut(BaseModel):

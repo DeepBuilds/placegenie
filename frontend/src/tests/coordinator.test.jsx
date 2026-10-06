@@ -235,7 +235,7 @@ describe('student placement profile', () => {
   it('shows "not found" for an unknown student', async () => {
     api.getStudentDetail.mockRejectedValue({ response: { status: 404, data: { detail: 'Student not found.' } } })
     renderAt('/coordinator/students/999')
-    expect(await screen.findByRole('alert')).toHaveTextContent('Student not found.')
+    expect(await screen.findByRole('alert')).toHaveTextContent('This student does not exist.')
   })
 })
 
